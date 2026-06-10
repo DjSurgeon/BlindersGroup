@@ -22,9 +22,8 @@ $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges`;';
 
 $success = true;
 
-// Execute all queries
 foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
+    if (!Db::getInstance()->execute($query)) {
         $success = false;
     }
 }

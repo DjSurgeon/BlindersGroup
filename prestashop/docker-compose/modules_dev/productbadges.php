@@ -57,7 +57,7 @@ class Productbadges extends Module
      */
     public function install()
     {
-        if (!include(dirname(__FILE__).'/sql/install.php')) {
+        if (!include_once dirname(__FILE__).'/sql/install.php') {
             return false;
         }
 
@@ -68,7 +68,7 @@ class Productbadges extends Module
 
     public function uninstall()
     {
-        if (!include(dirname(__FILE__).'/sql/uninstall.php')) {
+        if (!include_once dirname(__FILE__).'/sql/uninstall.php') {
             return false;
         }
 

@@ -22,6 +22,11 @@ Ninguna específica fuera de los defaults del agente.
 - **Para qué la usaste en este proyecto:** Garantizar que todos los archivos PHP sigan un estándar estricto de documentación PHPDoc en inglés técnico.
 - **Ruta dentro del repo:** `productbadges/.antigravity/skills/phpdoc-agent.md`
 
+- **Nombre del skill:** SonarQube Fixer Agent
+- **Origen:** Propia
+- **Para qué la usaste en este proyecto:** Reparar quirúrgicamente "Code Smells" y errores detectados por SonarQube sin alterar el resto del código y sin usar comentarios inline.
+- **Ruta dentro del repo:** `productbadges/.antigravity/skills/sonarqube-agent.md`
+
 ## 4. Slash commands personalizados
 Ninguno.
 

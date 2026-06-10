@@ -61,10 +61,9 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_product` 
     CONSTRAINT `FK_pb_prod` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-// Execute all queries
 foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
-        include(dirname(__FILE__).'/uninstall.php');
+    if (!Db::getInstance()->execute($query)) {
+        include_once dirname(__FILE__).'/uninstall.php';
         return false;
     }
 }
