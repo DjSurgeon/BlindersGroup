@@ -37,10 +37,6 @@ class Productbadges extends Module
         $this->version = '1.0.0';
         $this->author = 'Sergio Jimenez';
         $this->need_instance = 0;
-
-        /**
-         * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
-         */
         $this->bootstrap = true;
 
         parent::__construct();
@@ -62,6 +58,7 @@ class Productbadges extends Module
         }
 
         return parent::install() &&
+            $this->installTab() &&
             $this->registerHook('displayBackOfficeHeader') &&
             $this->registerHook('displayProductFlags');
     }
@@ -72,6 +69,31 @@ class Productbadges extends Module
             return false;
         }
 
-        return parent::uninstall();
+        return parent::uninstall() &&
+            $this->uninstallTab();
+    }
+
+    public function installTab()
+    {
+        $tab = new Tab();
+        $tab->active = 1;
+        $tab->class_name = 'AdminProductBadges';
+        $tab->name = array();
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = 'Product Badges';
+        }
+        $tab->id_parent = (int) Tab::getIdFromClassName('AdminCatalog');
+        $tab->module = $this->name;
+        return $tab->add();
+    }
+
+    public function uninstallTab()
+    {
+        $id_tab = (int) Tab::getIdFromClassName('AdminProductBadges');
+        if ($id_tab) {
+            $tab = new Tab($id_tab);
+            return $tab->delete();
+        }
+        return true;
     }
 }
