@@ -57,7 +57,9 @@ class Productbadges extends Module
      */
     public function install()
     {
-        include(dirname(__FILE__).'/sql/install.php');
+        if (!include(dirname(__FILE__).'/sql/install.php')) {
+            return false;
+        }
 
         return parent::install() &&
             $this->registerHook('displayBackOfficeHeader') &&
@@ -66,7 +68,9 @@ class Productbadges extends Module
 
     public function uninstall()
     {
-        include(dirname(__FILE__).'/sql/uninstall.php');
+        if (!include(dirname(__FILE__).'/sql/uninstall.php')) {
+            return false;
+        }
 
         return parent::uninstall();
     }

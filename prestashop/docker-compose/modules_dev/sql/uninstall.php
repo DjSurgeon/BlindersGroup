@@ -1,19 +1,32 @@
 <?php
 /**
- * 2007-2024 PrestaShop
+ * @version 1.0.0
+ * @author Sergio Jimenez
+ * @last_modified 2026-06-10
+ * @related_html none
+ * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
  *
- * NOTICE OF LICENSE
- * ...
+ * Uninstall SQL script for the productbadges module (Development Environment).
+ * Drops all module-related tables in the correct order to respect foreign key constraints.
  */
 
 $sql = array();
 
-/*
- * (Añadiremos los DROP TABLE aquí en la siguiente fase)
+/**
+ * ============ DROP TABLES (in reverse dependency order) ============
  */
+$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_product`;';
+$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_lang`;';
+$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_shop`;';
+$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges`;';
 
+$success = true;
+
+// Execute all queries
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {
-        return false;
+        $success = false;
     }
 }
+
+return $success;

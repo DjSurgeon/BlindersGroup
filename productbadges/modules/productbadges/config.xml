@@ -3,8 +3,8 @@
     <name>productbadges</name>
     <displayName><![CDATA[Product Badges]]></displayName>
     <version><![CDATA[1.0.0]]></version>
-    <description><![CDATA[Manage visual badges for products (e.g., NEW, SALE, EXCLUSIVE).]]></description>
-    <author><![CDATA[Blinders Group]]></author>
+    <description><![CDATA[Show custom badges on products]]></description>
+    <author><![CDATA[Sergio Jimenez]]></author>
     <tab><![CDATA[front_office_features]]></tab>
     <is_configurable>1</is_configurable>
     <need_instance>0</need_instance>
