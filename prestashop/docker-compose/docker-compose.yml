@@ -1,0 +1,133 @@
+# REDES
+networks:
+  prestashop_network:
+    driver: bridge
+
+# VOLÚMENES
+volumes:
+  mysql_data:
+    driver: local
+  apache_conf:
+    driver: local
+  prestashop_data:
+    driver: local
+
+# SERVICIOS
+services:
+
+  # ==================== MYSQL 8.0 ====================
+  mysql:
+    image: mysql:8.0.35
+    container_name: ps_mysql_8
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Aumentar límite de conexiones simultáneas
+      - ./mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=100
+    networks:
+      - prestashop_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==================== PRESTASHOP 1.7.8.11 ====================
+  prestashop:
+    image: prestashop/prestashop:1.7.8.11
+    container_name: ps_main_187
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # Base de datos
+      DB_SERVER: mysql
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWD: ${MYSQL_PASSWORD}
+      DB_PREFIX: ps_
+      # Tienda
+      PS_SHOP_NAME: ${PS_SHOP_NAME}
+      PS_DOMAIN: ${PS_DOMAIN}
+      PS_DOMAIN_SSL: ${PS_DOMAIN_SSL}
+      PS_LANGUAGE: ${PS_LANGUAGE}
+      PS_COUNTRY: ${PS_COUNTRY}
+      PS_ALL_LANGUAGES: ${PS_ALL_LANGUAGES}
+      PS_INSTALL_AUTO: "1"
+      # Admin
+      PS_FOLDER_ADMIN: ${PS_FOLDER_ADMIN}
+      PS_FOLDER_API: ${PS_FOLDER_API}
+      ADMIN_MAIL: ${ADMIN_MAIL}
+      ADMIN_PASSWD: ${ADMIN_PASSWD}
+      # PHP
+      MEMORY_LIMIT: ${MEMORY_LIMIT}
+      MAX_EXECUTION_TIME: ${MAX_EXECUTION_TIME}
+      UPLOAD_MAX_FILESIZE: ${UPLOAD_MAX_FILESIZE}
+      # Desarrollo
+      PS_DEV_MODE: "1"
+      PS_DEBUG: "1"
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      # Datos persistentes de PrestaShop
+      - prestashop_data:/var/www/html
+      # Módulos para desarrollo (mapeado desde host)
+      - ./modules_dev:/var/www/html/modules/productbadges:rw,z
+      # Temas (si trabajas con temas)
+      - ./themes_dev:/var/www/html/themes/mytheme:rw,z
+      # Logs y Cache eliminados para evitar problemas de permisos en la instalación inicial
+      # Apache config
+      - ./data/apache/000-default.conf:/etc/apache2/sites-enabled/000-default.conf:ro
+      - ./data/apache/custom.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - prestashop_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ==================== PHPMYADMIN ====================
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    container_name: ps_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      - mysql
+    environment:
+      PMA_HOST: ${PMA_HOST}
+      PMA_USER: ${PMA_USER}
+      PMA_PASSWORD: ${PMA_PASSWORD}
+      PMA_PORT: ${PMA_PORT}
+      PMA_ABSOLUTE_URI: http://localhost:8888/
+    ports:
+      - "8888:80"
+    volumes:
+      - ./data/phpmyadmin:/var/www/html/sessions
+    networks:
+      - prestashop_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"

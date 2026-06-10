@@ -1,0 +1,26 @@
+[mysqld]
+# Configuración para PrestaShop + desarrollo
+
+# Conexiones
+max_connections=100
+wait_timeout=600
+interactive_timeout=600
+
+# Buffer
+innodb_buffer_pool_size=256M
+innodb_log_file_size=100M
+max_allowed_packet=64M
+
+# Rendimiento
+innodb_flush_log_at_trx_commit=2
+innodb_flush_method=O_DIRECT
+
+# Logging (mínimo en desarrollo)
+general_log=OFF
+slow_query_log=ON
+slow_query_log_file=/var/log/mysql/slow-query.log
+long_query_time=2
+
+# Charset
+character_set_server=utf8mb4
+collation_server=utf8mb4_unicode_ci
