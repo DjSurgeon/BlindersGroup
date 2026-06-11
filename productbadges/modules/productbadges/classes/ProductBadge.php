@@ -43,19 +43,63 @@ class ProductBadge extends ObjectModel
 
     public function getProducts()
     {
-        // TODO: Implement logic to read from productbadges_product
-        return array();
+        if (!$this->id) {
+            return array();
+        }
+
+        $sql = 'SELECT `id_product` FROM `' . _DB_PREFIX_ . 'productbadges_product` 
+                WHERE `id_productbadge` = ' . (int)$this->id;
+
+        $results = Db::getInstance()->executeS($sql);
+        if (!$results) {
+            return array();
+        }
+
+        $product_ids = array();
+        foreach ($results as $row) {
+            $product_ids[] = (int)$row['id_product'];
+        }
+
+        return $product_ids;
     }
 
     public function updateProducts($product_ids)
     {
-        // TODO: Implement logic to clear old associations and insert new ones
-        return true;
+        $this->removeAllProducts();
+
+        if (empty($product_ids) || !is_array($product_ids)) {
+            return true;
+        }
+
+        $insert_data = array();
+        foreach ($product_ids as $id_product) {
+            $insert_data[] = array(
+                'id_productbadge' => (int)$this->id,
+                'id_product' => (int)$id_product
+            );
+        }
+
+        return Db::getInstance()->insert('productbadges_product', $insert_data);
     }
 
     public function removeAllProducts()
     {
-        // TODO: Implement logic to delete from productbadges_product
-        return true;
+        if (!$this->id) {
+            return true;
+        }
+
+        return Db::getInstance()->delete(
+            'productbadges_product', 
+            'id_productbadge = ' . (int)$this->id
+        );
+    }
+
+    /**
+     * Override delete to ensure relational data is cleaned up via code (defense in depth)
+     */
+    public function delete()
+    {
+        $this->removeAllProducts();
+        return parent::delete();
     }
 }
