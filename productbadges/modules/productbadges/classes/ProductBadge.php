@@ -16,59 +16,15 @@
  */
 class ProductBadge extends ObjectModel
 {
-    /**
-     * @var int ID
-     * @access public
-     */
     public $id_productbadge;
-
-    /**
-     * @var string Background Color (Hex)
-     * @access public
-     */
     public $bg_color;
-
-    /**
-     * @var string Text Color (Hex)
-     * @access public
-     */
     public $text_color;
-
-    /**
-     * @var string Position (top-left, top-right)
-     * @access public
-     */
     public $position;
-
-    /**
-     * @var bool Is active
-     * @access public
-     */
     public $active;
-
-    /**
-     * @var string Object creation date
-     * @access public
-     */
     public $date_add;
-
-    /**
-     * @var string Object last modification date
-     * @access public
-     */
     public $date_upd;
-
-    /**
-     * @var string Multi-lang Text
-     * @access public
-     */
     public $text;
 
-    /**
-     * @see ObjectModel::$definition
-     * @var array
-     * @access public
-     */
     public static $definition = array(
         'table' => 'productbadges',
         'primary' => 'id_productbadge',
@@ -85,34 +41,18 @@ class ProductBadge extends ObjectModel
         ),
     );
 
-    /**
-     * Get all product IDs associated with this badge.
-     * 
-     * @return array Array of product IDs.
-     */
     public function getProducts()
     {
         // TODO: Implement logic to read from productbadges_product
         return array();
     }
 
-    /**
-     * Update the products associated with this badge (Many-to-Many).
-     * 
-     * @param array $product_ids Array of product IDs to associate.
-     * @return bool True if update is successful.
-     */
     public function updateProducts($product_ids)
     {
         // TODO: Implement logic to clear old associations and insert new ones
         return true;
     }
 
-    /**
-     * Clear all product associations for this badge.
-     * 
-     * @return bool True if removal is successful.
-     */
     public function removeAllProducts()
     {
         // TODO: Implement logic to delete from productbadges_product
