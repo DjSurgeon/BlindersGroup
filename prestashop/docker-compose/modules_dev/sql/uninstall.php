@@ -2,7 +2,7 @@
 /**
  * @version 1.0.0
  * @author Sergio Jimenez
- * @last_modified 2026-06-10
+ * @last_modified 2026-06-11
  * @related_html none
  * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
  *
