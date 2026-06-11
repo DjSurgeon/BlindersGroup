@@ -59,6 +59,7 @@ class Productbadges extends Module
 
         return parent::install() &&
             $this->installTab() &&
+            $this->installConfiguration() &&
             $this->registerHook('displayBackOfficeHeader') &&
             $this->registerHook('displayProductFlags');
     }
@@ -70,7 +71,8 @@ class Productbadges extends Module
         }
 
         return parent::uninstall() &&
-            $this->uninstallTab();
+            $this->uninstallTab() &&
+            $this->uninstallConfiguration();
     }
 
     public function installTab()
@@ -95,5 +97,21 @@ class Productbadges extends Module
             return $tab->delete();
         }
         return true;
+    }
+
+    public function installConfiguration()
+    {
+        return Configuration::updateValue('PRODUCTBADGES_LIVE', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_USE_LIST', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_USE_PRODUCT', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_MAX_ITEMS', 3);
+    }
+
+    public function uninstallConfiguration()
+    {
+        return Configuration::deleteByName('PRODUCTBADGES_LIVE') &&
+            Configuration::deleteByName('PRODUCTBADGES_USE_LIST') &&
+            Configuration::deleteByName('PRODUCTBADGES_USE_PRODUCT') &&
+            Configuration::deleteByName('PRODUCTBADGES_MAX_ITEMS');
     }
 }
