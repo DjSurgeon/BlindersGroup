@@ -5,16 +5,10 @@
  * @last_modified 2026-06-11
  * @related_html none
  * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
- *
- * Install SQL script for the productbadges module (Development Environment).
- * Creates the necessary database tables for badges, shop associations, languages, and product associations.
  */
 
 $sql = array();
 
-/**
- * ============ TABLE 1: MAIN BADGES ============
- */
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges` (
     `id_productbadge` int(11) NOT NULL AUTO_INCREMENT,
     `bg_color` varchar(32) NOT NULL,
@@ -26,9 +20,6 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges` (
     PRIMARY KEY  (`id_productbadge`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 2: BADGES BY SHOP ============
- */
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_shop` (
     `id_productbadge` int(11) NOT NULL,
     `id_shop` int(11) NOT NULL,
@@ -38,9 +29,6 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_shop` (
     CONSTRAINT `FK_pb_shop` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 3: BADGES BY LANGUAGE AND SHOP ============
- */
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_lang` (
     `id_productbadge` int(11) NOT NULL,
     `id_lang` int(11) NOT NULL,
@@ -50,9 +38,6 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_lang` (
     CONSTRAINT `FK_pb_lang` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 4: BADGE-PRODUCT RELATION ============
- */
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_product` (
     `id_productbadge` int(11) NOT NULL,
     `id_product` int(10) unsigned NOT NULL,

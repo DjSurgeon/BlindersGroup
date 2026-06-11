@@ -14,7 +14,7 @@
  * @package productbadges
  * @category entities
  */
-class ProductBadge extends ObjectModel
+class ProductBadgeModel extends ObjectModel
 {
     public $id_productbadge;
     public $bg_color;
@@ -29,15 +29,16 @@ class ProductBadge extends ObjectModel
         'table' => 'productbadges',
         'primary' => 'id_productbadge',
         'multilang' => true,
+        'multilang_shop' => true,
         'multishop' => true,
         'fields' => array(
-            'bg_color'   => array('type' => self::TYPE_STRING, 'validate' => 'isColorHexValue', 'required' => true, 'size' => 32),
-            'text_color' => array('type' => self::TYPE_STRING, 'validate' => 'isColorHexValue', 'required' => true, 'size' => 32),
-            'position'   => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
+            'bg_color'   => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
+            'text_color' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
+            'position'   => array('type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'required' => true, 'size' => 32),
             'active'     => array('type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true),
             'date_add'   => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
             'date_upd'   => array('type' => self::TYPE_DATE, 'validate' => 'isDate'),
-            'text'       => array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isString', 'required' => true, 'size' => 255),
+            'text'       => array('type' => self::TYPE_STRING, 'lang' => true, 'validate' => 'isCleanHtml', 'required' => true, 'size' => 255),
         ),
     );
 
@@ -94,9 +95,6 @@ class ProductBadge extends ObjectModel
         );
     }
 
-    /**
-     * Override delete to ensure relational data is cleaned up via code (defense in depth)
-     */
     public function delete()
     {
         $this->removeAllProducts();

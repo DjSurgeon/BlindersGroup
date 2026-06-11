@@ -2,78 +2,53 @@
 /**
  * @version 1.0.0
  * @author Sergio Jimenez
- * @last_modified 2026-06-10
+ * @last_modified 2026-06-11
  * @related_html none
- * @database productbadge, productbadge_shop, productbadge_lang, productbadge_product
- *
- * Install SQL script for the productbadges module.
- * Creates the necessary database tables for badges, shop associations, languages, and product associations.
+ * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
  */
-
-if (!defined('_PS_VERSION_')) {
-    exit;
-}
 
 $sql = array();
 
-/**
- * ============ TABLE 1: MAIN BADGES ============
- * This table stores visual properties like colors and position.
- */
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadge` (
-  `id_productbadge` INT(11) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `color_bg` VARCHAR(7) NOT NULL,
-  `color_text` VARCHAR(7) NOT NULL,
-  `position` VARCHAR(16) NOT NULL DEFAULT "top-left",
-  `active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-  `date_add` DATETIME NOT NULL,
-  `date_upd` DATETIME NOT NULL,
-  PRIMARY KEY (`id_productbadge`),
-  INDEX `idx_active` (`active`)
-) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges` (
+    `id_productbadge` int(11) NOT NULL AUTO_INCREMENT,
+    `bg_color` varchar(32) NOT NULL,
+    `text_color` varchar(32) NOT NULL,
+    `position` varchar(32) NOT NULL DEFAULT \'top-left\',
+    `active` tinyint(1) unsigned NOT NULL DEFAULT \'0\',
+    `date_add` datetime NOT NULL,
+    `date_upd` datetime NOT NULL,
+    PRIMARY KEY  (`id_productbadge`)
+) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 2: BADGES BY SHOP ============
- * Allows enabling/disabling badges independently for each shop in a multi-shop context.
- */
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadge_shop` (
-  `id_productbadge` INT(11) UNSIGNED NOT NULL,
-  `id_shop` INT(11) UNSIGNED NOT NULL,
-  `active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
-  PRIMARY KEY (`id_productbadge`, `id_shop`),
-  INDEX `idx_shop` (`id_shop`),
-  CONSTRAINT `FK_pb_shop` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadge` (`id_productbadge`) ON DELETE CASCADE
-) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_shop` (
+    `id_productbadge` int(11) NOT NULL,
+    `id_shop` int(11) NOT NULL,
+    `active` tinyint(1) unsigned NOT NULL DEFAULT \'0\',
+    PRIMARY KEY  (`id_productbadge`, `id_shop`),
+    KEY `id_shop` (`id_shop`),
+    CONSTRAINT `FK_pb_shop` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
+) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 3: BADGES BY LANGUAGE AND SHOP ============
- * Stores the translated text for each badge per shop and language.
- */
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadge_lang` (
-  `id_productbadge` INT(11) UNSIGNED NOT NULL,
-  `id_shop` INT(11) UNSIGNED NOT NULL,
-  `id_lang` INT(11) UNSIGNED NOT NULL,
-  `text` VARCHAR(64) NOT NULL,
-  PRIMARY KEY (`id_productbadge`, `id_shop`, `id_lang`),
-  INDEX `idx_lang` (`id_lang`),
-  CONSTRAINT `FK_pb_lang` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadge` (`id_productbadge`) ON DELETE CASCADE
-) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_lang` (
+    `id_productbadge` int(11) NOT NULL,
+    `id_lang` int(11) NOT NULL,
+    `id_shop` int(11) NOT NULL,
+    `text` varchar(255) NOT NULL,
+    PRIMARY KEY  (`id_productbadge`, `id_shop`, `id_lang`),
+    CONSTRAINT `FK_pb_lang` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
+) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-/**
- * ============ TABLE 4: BADGE-PRODUCT RELATION ============
- * Pivot table for the many-to-many relationship between badges and products.
- */
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadge_product` (
-  `id_productbadge` INT(11) UNSIGNED NOT NULL,
-  `id_product` INT(11) UNSIGNED NOT NULL,
-  PRIMARY KEY (`id_productbadge`, `id_product`),
-  INDEX `idx_product` (`id_product`),
-  CONSTRAINT `FK_pb_prod` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadge` (`id_productbadge`) ON DELETE CASCADE
-) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;';
+$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_product` (
+    `id_productbadge` int(11) NOT NULL,
+    `id_product` int(10) unsigned NOT NULL,
+    PRIMARY KEY  (`id_productbadge`, `id_product`),
+    KEY `id_product` (`id_product`),
+    CONSTRAINT `FK_pb_prod` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
+) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-// Execute all queries
 foreach ($sql as $query) {
-    if (Db::getInstance()->execute($query) == false) {
+    if (!Db::getInstance()->execute($query)) {
+        include_once dirname(__FILE__).'/uninstall.php';
         return false;
     }
 }
