@@ -41,5 +41,9 @@ Se solucionó subiendo la asignación una línea, **antes** del `parent::__const
 1. Se forzó la clave primaria correcta en el controlador definiendo `$this->identifier = 'id_productbadge';`.
 2. Se resolvió la ambigüedad SQL inyectando el alias en la definición del campo de listado mediante `'filter_key' => 'a!id_productbadge'`.
 
+### 6. ClassNotFoundException: Autoloader de PrestaShop y Objetos del Módulo
+**Problema**: Al hacer clic en "Añadir nuevo" en el controlador del Backoffice, PrestaShop intentaba ejecutar `new ProductBadgeModel()` mediante su método `loadObject()`, lo que resultaba en un `ClassNotFoundException`.
+**Solución**: El autoloader (`spl_autoload`) nativo de PrestaShop 1.7 no escanea de forma predeterminada la carpeta `classes/` dentro de los módulos de terceros para inyectar modelos en los controladores de administración. La solución fue añadir un requerimiento explícito en la cabecera del controlador usando la ruta absoluta segura: `require_once dirname(__FILE__) . '/../../classes/ProductBadgeModel.php';`. Además, se implementó validación server-side estricta (`preg_match('/^#[0-9a-fA-F]{6}$/')`) en el `postProcess()` para proteger la base de datos de inyecciones de color maliciosas.
+
 ---
 *Este documento cumple con el requisito funcional "IA.md completado (herramientas, errores detectados)".*

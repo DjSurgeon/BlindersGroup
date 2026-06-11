@@ -2,10 +2,19 @@
 /**
  * @version 1.0.0
  * @author Sergio Jimenez
+ * @last_modified 2026-06-11
+ * @related_html none
+ * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
  */
 
 require_once dirname(__FILE__) . '/../../classes/ProductBadgeModel.php';
 
+/**
+ * Admin Controller for managing Product Badges.
+ * 
+ * @package productbadges
+ * @category admin_controllers
+ */
 class AdminProductBadgesController extends ModuleAdminController
 {
     public function __construct()
@@ -55,7 +64,6 @@ class AdminProductBadgesController extends ModuleAdminController
 
     public function renderForm()
     {
-        // Load the product IDs for this badge if we are editing
         $product_ids_str = '';
         if ($this->display == 'edit' && $this->object && $this->object->id) {
             $product_ids = $this->object->getProducts();
@@ -145,7 +153,6 @@ class AdminProductBadgesController extends ModuleAdminController
     public function postProcess()
     {
         if (Tools::isSubmit('submitAddproductbadges')) {
-            // Server-side validation for colors
             $bg_color = Tools::getValue('bg_color');
             $text_color = Tools::getValue('text_color');
             
@@ -156,13 +163,11 @@ class AdminProductBadgesController extends ModuleAdminController
                 $this->errors[] = $this->l('Invalid text color format. It must be a valid HEX color (e.g., #FFFFFF).');
             }
 
-            // Validate position
             $position = Tools::getValue('position');
             if (!in_array($position, array('top-left', 'top-right'))) {
                 $this->errors[] = $this->l('Invalid position selected.');
             }
 
-            // Validate product IDs
             $product_ids_raw = Tools::getValue('product_ids');
             if (!empty($product_ids_raw)) {
                 $ids = explode(',', $product_ids_raw);
@@ -210,7 +215,6 @@ class AdminProductBadgesController extends ModuleAdminController
             }
         }
         
-        // Use the model's method to handle M:M relations
         $object->updateProducts($valid_ids);
     }
 }
