@@ -24,12 +24,86 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
+/**
+ * @version 1.0.0
+ * @author Sergio Jimenez
+ * @last_modified 2026-06-11
+ * @related_html none
+ * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
+ */
+
 if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/classes/ProductBadge.php';
+
+/**
+ * Main class for Product Badges module.
+ * 
+ * @package productbadges
+ * @category front_office_features
+ */
 class Productbadges extends Module
 {
+    /**
+     * @var string
+     * @access public
+     */
+    public $name;
+
+    /**
+     * @var string
+     * @access public
+     */
+    public $tab;
+
+    /**
+     * @var string
+     * @access public
+     */
+    public $version;
+
+    /**
+     * @var string
+     * @access public
+     */
+    public $author;
+
+    /**
+     * @var int
+     * @access public
+     */
+    public $need_instance;
+
+    /**
+     * @var bool
+     * @access public
+     */
+    public $bootstrap;
+
+    /**
+     * @var string
+     * @access public
+     */
+    public $displayName;
+
+    /**
+     * @var string
+     * @access public
+     */
+    public $description;
+
+    /**
+     * @var array
+     * @access public
+     */
+    public $ps_versions_compliancy;
+
+    /**
+     * Productbadges constructor.
+     * Sets module metadata and configuration defaults.
+     */
     public function __construct()
     {
         $this->name = 'productbadges';
@@ -48,8 +122,10 @@ class Productbadges extends Module
     }
 
     /**
-     * Don't forget to create update methods if needed:
-     * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
+     * Installs the module.
+     * Includes SQL installation, tab creation, configuration defaults, and hook registration.
+     * 
+     * @return bool True if installation is successful, false otherwise.
      */
     public function install()
     {
@@ -64,6 +140,12 @@ class Productbadges extends Module
             $this->registerHook('displayProductFlags');
     }
 
+    /**
+     * Uninstalls the module.
+     * Includes SQL uninstallation, tab removal, and configuration deletion.
+     * 
+     * @return bool True if uninstallation is successful, false otherwise.
+     */
     public function uninstall()
     {
         if (!include_once dirname(__FILE__).'/sql/uninstall.php') {
@@ -75,6 +157,11 @@ class Productbadges extends Module
             $this->uninstallConfiguration();
     }
 
+    /**
+     * Installs the Admin Tab for the module.
+     * 
+     * @return bool True if tab creation is successful, false otherwise.
+     */
     public function installTab()
     {
         $tab = new Tab();
@@ -89,6 +176,11 @@ class Productbadges extends Module
         return $tab->add();
     }
 
+    /**
+     * Uninstalls the Admin Tab for the module.
+     * 
+     * @return bool True if tab removal is successful, false otherwise.
+     */
     public function uninstallTab()
     {
         $id_tab = (int) Tab::getIdFromClassName('AdminProductBadges');
@@ -99,6 +191,11 @@ class Productbadges extends Module
         return true;
     }
 
+    /**
+     * Installs default configuration values.
+     * 
+     * @return bool True if configuration is successful, false otherwise.
+     */
     public function installConfiguration()
     {
         return Configuration::updateValue('PRODUCTBADGES_LIVE', 1) &&
@@ -107,6 +204,11 @@ class Productbadges extends Module
             Configuration::updateValue('PRODUCTBADGES_MAX_ITEMS', 3);
     }
 
+    /**
+     * Uninstalls configuration values.
+     * 
+     * @return bool True if configuration removal is successful, false otherwise.
+     */
     public function uninstallConfiguration()
     {
         return Configuration::deleteByName('PRODUCTBADGES_LIVE') &&

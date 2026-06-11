@@ -36,9 +36,10 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/classes/ProductBadge.php';
+
 /**
  * Main class for Product Badges module.
- * 
  * @package productbadges
  * @category front_office_features
  */
@@ -122,7 +123,6 @@ class Productbadges extends Module
     /**
      * Installs the module.
      * Includes SQL installation, tab creation, configuration defaults, and hook registration.
-     * 
      * @return bool True if installation is successful, false otherwise.
      */
     public function install()
@@ -141,7 +141,6 @@ class Productbadges extends Module
     /**
      * Uninstalls the module.
      * Includes SQL uninstallation, tab removal, and configuration deletion.
-     * 
      * @return bool True if uninstallation is successful, false otherwise.
      */
     public function uninstall()
@@ -157,7 +156,6 @@ class Productbadges extends Module
 
     /**
      * Installs the Admin Tab for the module.
-     * 
      * @return bool True if tab creation is successful, false otherwise.
      */
     public function installTab()
@@ -176,7 +174,6 @@ class Productbadges extends Module
 
     /**
      * Uninstalls the Admin Tab for the module.
-     * 
      * @return bool True if tab removal is successful, false otherwise.
      */
     public function uninstallTab()
@@ -191,7 +188,6 @@ class Productbadges extends Module
 
     /**
      * Installs default configuration values.
-     * 
      * @return bool True if configuration is successful, false otherwise.
      */
     public function installConfiguration()
@@ -204,7 +200,6 @@ class Productbadges extends Module
 
     /**
      * Uninstalls configuration values.
-     * 
      * @return bool True if configuration removal is successful, false otherwise.
      */
     public function uninstallConfiguration()
