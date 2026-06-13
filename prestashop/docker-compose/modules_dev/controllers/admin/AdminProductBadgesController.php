@@ -131,12 +131,7 @@ class AdminProductBadgesController extends ModuleAdminController
                         'name' => 'name'
                     )
                 ),
-                array(
-                    'type' => 'text',
-                    'label' => $this->l('Product IDs'),
-                    'name' => 'product_ids',
-                    'desc' => $this->l('Comma separated product IDs to assign this badge (e.g. 1,5,12).')
-                ),
+
                 array(
                     'type' => 'switch',
                     'label' => $this->l('Active'),
@@ -185,16 +180,7 @@ class AdminProductBadgesController extends ModuleAdminController
                 $this->errors[] = $this->l('Invalid position selected.');
             }
 
-            $product_ids_raw = Tools::getValue('product_ids');
-            if (!empty($product_ids_raw)) {
-                $ids = explode(',', $product_ids_raw);
-                foreach ($ids as $id) {
-                    if (!Validate::isUnsignedInt(trim($id))) {
-                        $this->errors[] = $this->l('Product IDs must be a comma-separated list of positive integers.');
-                        break;
-                    }
-                }
-            }
+
 
             if (!empty($this->errors)) {
                 $this->display = 'edit';
@@ -205,33 +191,4 @@ class AdminProductBadgesController extends ModuleAdminController
         return parent::postProcess();
     }
 
-    protected function afterAdd($object)
-    {
-        $this->saveProductAssociations($object);
-        return parent::afterAdd($object);
-    }
-
-    protected function afterUpdate($object)
-    {
-        $this->saveProductAssociations($object);
-        return parent::afterUpdate($object);
-    }
-
-    private function saveProductAssociations($object)
-    {
-        $product_ids_raw = Tools::getValue('product_ids');
-        $valid_ids = array();
-        
-        if (!empty($product_ids_raw)) {
-            $ids = explode(',', $product_ids_raw);
-            foreach ($ids as $id) {
-                $id = (int)trim($id);
-                if ($id > 0) {
-                    $valid_ids[] = $id;
-                }
-            }
-        }
-        
-        $object->updateProducts($valid_ids);
-    }
 }

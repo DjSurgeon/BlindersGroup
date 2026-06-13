@@ -81,7 +81,9 @@ class Productbadges extends Module
             $this->installTab() &&
             $this->installConfiguration() &&
             $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('displayProductFlags');
+            $this->registerHook('displayProductFlags') &&
+            $this->registerHook('displayAdminProductsExtra') &&
+            $this->registerHook('actionProductUpdate');
     }
 
     public function uninstall()
@@ -242,5 +244,78 @@ class Productbadges extends Module
             'PRODUCTBADGES_USE_PRODUCT' => Tools::getValue('PRODUCTBADGES_USE_PRODUCT', Configuration::get('PRODUCTBADGES_USE_PRODUCT')),
             'PRODUCTBADGES_MAX_ITEMS' => Tools::getValue('PRODUCTBADGES_MAX_ITEMS', Configuration::get('PRODUCTBADGES_MAX_ITEMS')),
         );
+    }
+
+    public function hookDisplayProductFlags($params)
+    {
+        return '';
+    }
+
+    public function hookDisplayAdminProductsExtra($params)
+    {
+        $id_product = (int) $params['id_product'];
+        if (!$id_product) {
+            return '';
+        }
+
+        // Obtener todos los badges activos
+        $badges = Db::getInstance()->executeS(
+            'SELECT a.*, b.`text` 
+             FROM `' . _DB_PREFIX_ . 'productbadges` a
+             LEFT JOIN `' . _DB_PREFIX_ . 'productbadges_lang` b 
+               ON (a.`id_productbadge` = b.`id_productbadge` AND b.`id_lang` = ' . (int) $this->context->language->id . ')
+             WHERE a.`active` = 1'
+        );
+
+        // Obtener badges asignados a este producto
+        $assigned_badges = Db::getInstance()->executeS(
+            'SELECT `id_productbadge` 
+             FROM `' . _DB_PREFIX_ . 'productbadges_product` 
+             WHERE `id_product` = ' . (int) $id_product
+        );
+
+        $assigned_ids = array();
+        if ($assigned_badges) {
+            foreach ($assigned_badges as $ab) {
+                $assigned_ids[] = (int) $ab['id_productbadge'];
+            }
+        }
+
+        $this->context->smarty->assign(array(
+            'productbadges' => $badges,
+            'assigned_badges' => $assigned_ids,
+        ));
+
+        return $this->display(__FILE__, 'views/templates/admin/hook/admin_products_extra.tpl');
+    }
+
+    public function hookActionProductUpdate($params)
+    {
+        $id_product = (int) $params['id_product'];
+        if (!$id_product) {
+            return;
+        }
+
+        // Solo procesar si el formulario contenía el array de productbadges (incluso si está vacío, se envía un array vacío si el checkbox existía en el DOM)
+        // En PS 1.7 Symfony, los checkboxes extra a veces llegan en Tools::getValue
+        $submitted_badges = Tools::getValue('productbadges');
+
+        if ($submitted_badges !== false) {
+            // Limpiar las asociaciones previas
+            Db::getInstance()->delete('productbadges_product', 'id_product = ' . (int) $id_product);
+
+            if (is_array($submitted_badges) && !empty($submitted_badges)) {
+                $insert_data = array();
+                foreach ($submitted_badges as $id_badge) {
+                    $insert_data[] = array(
+                        'id_productbadge' => (int) $id_badge,
+                        'id_product' => (int) $id_product
+                    );
+                }
+                if (!empty($insert_data)) {
+                    Db::getInstance()->insert('productbadges_product', $insert_data);
+                }
+            }
+        }
     }
 }
