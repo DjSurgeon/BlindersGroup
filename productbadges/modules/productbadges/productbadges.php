@@ -36,6 +36,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once dirname(__FILE__) . '/classes/ProductBadgeModel.php';
+
 /**
  * Main class for Product Badges module.
  * @package productbadges
@@ -131,5 +133,114 @@ class Productbadges extends Module
             Configuration::deleteByName('PRODUCTBADGES_USE_LIST') &&
             Configuration::deleteByName('PRODUCTBADGES_USE_PRODUCT') &&
             Configuration::deleteByName('PRODUCTBADGES_MAX_ITEMS');
+    }
+
+    public function getContent()
+    {
+        $output = '';
+
+        if (Tools::isSubmit('submitProductbadgesModule')) {
+            $live = (int) Tools::getValue('PRODUCTBADGES_LIVE');
+            $use_list = (int) Tools::getValue('PRODUCTBADGES_USE_LIST');
+            $use_product = (int) Tools::getValue('PRODUCTBADGES_USE_PRODUCT');
+            $max_items = Tools::getValue('PRODUCTBADGES_MAX_ITEMS');
+
+            if (!Validate::isInt($max_items) || $max_items <= 0) {
+                $output .= $this->displayError($this->l('Invalid max items value. It must be a positive integer.'));
+            } else {
+                Configuration::updateValue('PRODUCTBADGES_LIVE', $live);
+                Configuration::updateValue('PRODUCTBADGES_USE_LIST', $use_list);
+                Configuration::updateValue('PRODUCTBADGES_USE_PRODUCT', $use_product);
+                Configuration::updateValue('PRODUCTBADGES_MAX_ITEMS', (int) $max_items);
+                $output .= $this->displayConfirmation($this->l('Settings updated successfully.'));
+            }
+        }
+
+        return $output . $this->renderForm();
+    }
+
+    public function renderForm()
+    {
+        $fields_form = array(
+            'form' => array(
+                'legend' => array(
+                    'title' => $this->l('Settings'),
+                    'icon' => 'icon-cogs'
+                ),
+                'input' => array(
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Global Active'),
+                        'name' => 'PRODUCTBADGES_LIVE',
+                        'is_bool' => true,
+                        'desc' => $this->l('Use this module in frontend'),
+                        'values' => array(
+                            array('id' => 'active_on', 'value' => 1, 'label' => $this->l('Enabled')),
+                            array('id' => 'active_off', 'value' => 0, 'label' => $this->l('Disabled'))
+                        ),
+                    ),
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Show in product lists'),
+                        'name' => 'PRODUCTBADGES_USE_LIST',
+                        'is_bool' => true,
+                        'desc' => $this->l('Display badges on category and search pages'),
+                        'values' => array(
+                            array('id' => 'active_on', 'value' => 1, 'label' => $this->l('Enabled')),
+                            array('id' => 'active_off', 'value' => 0, 'label' => $this->l('Disabled'))
+                        ),
+                    ),
+                    array(
+                        'type' => 'switch',
+                        'label' => $this->l('Show in product page'),
+                        'name' => 'PRODUCTBADGES_USE_PRODUCT',
+                        'is_bool' => true,
+                        'desc' => $this->l('Display badges on the main product page'),
+                        'values' => array(
+                            array('id' => 'active_on', 'value' => 1, 'label' => $this->l('Enabled')),
+                            array('id' => 'active_off', 'value' => 0, 'label' => $this->l('Disabled'))
+                        ),
+                    ),
+                    array(
+                        'type' => 'text',
+                        'label' => $this->l('Max badges per product'),
+                        'name' => 'PRODUCTBADGES_MAX_ITEMS',
+                        'class' => 'fixed-width-xs',
+                        'desc' => $this->l('Maximum number of badges to display on a single product.')
+                    ),
+                ),
+                'submit' => array(
+                    'title' => $this->l('Save'),
+                )
+            )
+        );
+
+        $helper = new HelperForm();
+        $helper->show_toolbar = false;
+        $helper->table = $this->name;
+        $lang = new Language((int) Configuration::get('PS_LANG_DEFAULT'));
+        $helper->default_form_language = $lang->id;
+        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') ? Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') : 0;
+        $helper->identifier = $this->identifier;
+        $helper->submit_action = 'submitProductbadgesModule';
+        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false) . '&configure=' . $this->name . '&tab_module=' . $this->tab . '&module_name=' . $this->name;
+        $helper->token = Tools::getAdminTokenLite('AdminModules');
+        $helper->tpl_vars = array(
+            'fields_value' => $this->getConfigFieldsValues(),
+            'languages' => $this->context->controller->getLanguages(),
+            'id_language' => $this->context->language->id
+        );
+
+        return $helper->generateForm(array($fields_form));
+    }
+
+    public function getConfigFieldsValues()
+    {
+        return array(
+            'PRODUCTBADGES_LIVE' => Tools::getValue('PRODUCTBADGES_LIVE', Configuration::get('PRODUCTBADGES_LIVE')),
+            'PRODUCTBADGES_USE_LIST' => Tools::getValue('PRODUCTBADGES_USE_LIST', Configuration::get('PRODUCTBADGES_USE_LIST')),
+            'PRODUCTBADGES_USE_PRODUCT' => Tools::getValue('PRODUCTBADGES_USE_PRODUCT', Configuration::get('PRODUCTBADGES_USE_PRODUCT')),
+            'PRODUCTBADGES_MAX_ITEMS' => Tools::getValue('PRODUCTBADGES_MAX_ITEMS', Configuration::get('PRODUCTBADGES_MAX_ITEMS')),
+        );
     }
 }
