@@ -225,6 +225,25 @@ max_input_vars = 10000
 docker exec -it ps_main_187 chown -R www-data:www-data /var/www/html/var/cache/
 ```
 
+### 5. Comandos para Levantar y Gestionar el Entorno
+Una vez tengas la estructura completa, abre tu terminal en el directorio `docker-compose/` y ejecuta los comandos vitales:
+
+- **Arrancar el entorno (en segundo plano):**
+  ```bash
+  docker-compose up -d
+  ```
+- **Ver logs en tiempo real** (muy útil en el primer arranque, ya que PrestaShop tarda un par de minutos en instalarse la primera vez):
+  ```bash
+  docker-compose logs -f prestashop
+  ```
+- **Detener el entorno (sin borrar datos):**
+  ```bash
+  docker-compose down
+  ```
+
+> [!TIP]
+> **Acceso:** Cuando los logs confirmen que Apache está listo, entra a la tienda pública en `http://prestashop.local:8080` y a tu Backoffice en `http://prestashop.local:8080/admin_xyz123blinders` (usuario: `djsurgeon83@gmail.com` / clave: `AdminBlinders2024!`).
+
 ---
 
 ## FASE 2: Desarrollo del Módulo ("The Golden Path")
