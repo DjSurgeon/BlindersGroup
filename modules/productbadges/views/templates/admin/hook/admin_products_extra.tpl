@@ -11,14 +11,14 @@
     {if isset($productbadges) && $productbadges|count > 0}
         <div class="form-group">
             <label class="form-control-label">{l s='Select badges for this product:' mod='productbadges'}</label>
-            <div class="checkbox-list">
+            <div class="checkbox-list" data-max-items="{$max_items|intval}">
                 {foreach from=$productbadges item=badge}
                     <div class="checkbox">
                         <label>
                             <input type="checkbox" name="productbadges[]" value="{$badge.id_productbadge|intval}"
                                 {if in_array($badge.id_productbadge, $assigned_badges)}checked="checked"{/if}>
-                            <span class="badge" style="background-color: {$badge.bg_color|escape:'html'}; color: {$badge.text_color|escape:'html'}; padding: 5px 10px; border-radius: 4px; margin-left: 10px;">
-                                {$badge.text|escape:'html'}
+                            <span class="badge" style="background-color: {$badge.bg_color|escape:'html':'UTF-8'}; color: {$badge.text_color|escape:'html':'UTF-8'}; padding: 5px 10px; border-radius: 4px; margin-left: 10px;">
+                                {$badge.text|escape:'html':'UTF-8'}
                             </span>
                         </label>
                     </div>
@@ -35,28 +35,3 @@
     {/if}
 </div>
 
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        var maxItems = {$max_items|intval};
-        if (maxItems <= 0) return; // 0 significa sin límite
-
-        var checkboxes = document.querySelectorAll('input[name="productbadges[]"]');
-        
-        function updateCheckboxes() {
-            var checkedCount = document.querySelectorAll('input[name="productbadges[]"]:checked').length;
-            
-            checkboxes.forEach(function(cb) {
-                if (!cb.checked) {
-                    cb.disabled = (checkedCount >= maxItems);
-                }
-            });
-        }
-        
-        checkboxes.forEach(function(cb) {
-            cb.addEventListener('change', updateCheckboxes);
-        });
-        
-        // Initial state check
-        updateCheckboxes();
-    });
-</script>

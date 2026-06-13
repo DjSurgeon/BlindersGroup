@@ -22,7 +22,8 @@ El desarrollo de este módulo de PrestaShop 1.7 se realizó en estrecha colabora
    Al principio, la IA intentó programar el módulo en modo *Full Multishop*, creando una tabla `ps_productbadges_shop` e integrando los métodos `Shop::addTableAssociation()`. Sin embargo, esto generó un conflicto silencioso: al instalar y asociar etiquetas a productos, las consultas `INNER JOIN` con la tabla `_shop` fallaban porque los registros de la tienda no se estaban propagando bien en el entorno de desarrollo. Nos hizo perder tiempo persiguiendo "etiquetas fantasma" que sí estaban en la BD pero no se renderizaban en el admin. Al final, se decidió realizar un rollback y aplicar un enfoque global más estable.
 
 3. **Incomprensión inicial de la UI del Backoffice:**
-   Durante la validación de idiomas, el desarrollador indicó que la base de datos guardaba el mismo texto para Inglés que para Español. La IA dedicó tiempo a depurar el ORM y hacer pruebas de curl cuando, en realidad, el problema era una simple incomprensión de UX: PrestaShop copia el texto al segundo idioma si el usuario no hace clic en la "banderita" desplegable (ES/EN) del campo de texto en el Backoffice. Un humano experimentado habría detectado este comportamiento visual al instante.
+4. **Incomprensión de las Mejores Prácticas de Assets (CSS/JS):**
+   Inicialmente, la IA inyectó bloques completos de `<script>` en las plantillas Smarty. Un desarrollador Senior tuvo que guiarla posteriormente para crear archivos estáticos `.js` y `.css` físicos, e inyectarlos eficientemente utilizando los hooks `actionAdminControllerSetMedia` y `actionFrontControllerSetMedia`, condicionando su carga únicamente a los controladores necesarios para no penalizar el tiempo de carga global (WPO).
 
 ## ¿Qué cambiaríamos del flujo con IA si lo repitiéramos?
 

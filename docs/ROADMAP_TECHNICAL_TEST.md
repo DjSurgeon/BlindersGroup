@@ -81,7 +81,10 @@ Este documento es una guía paso a paso, diseñada con una precisión quirúrgic
 3. **Inyección Visual (`hookDisplayHeader`):**
    - Usa la BD para extraer los colores (`bg_color`, `text_color`) de todas las etiquetas activas.
    - Genera una etiqueta `<style>` con clases `.product-flag.badge-1 { background-color: #f00; }`.
-   - Si la etiqueta es `top-right`, aplica un `float: right;` o `align-self: flex-end;` mediante CSS.
+4. **Carga Eficiente de Assets (El Detalle Senior):**
+   - Nunca inyectes etiquetas `<script>` en bloque dentro de Smarty si son muy largas. Crea archivos en `views/js/` y `views/css/`.
+   - Regístralos en `productbadges.php` usando `hookActionAdminControllerSetMedia` y `hookActionFrontControllerSetMedia`.
+   - *Condicional:* Asegúrate de cargar el JS **SOLO** cuando `$this->context->controller->controller_name === 'AdminProducts'`. Ahorras tiempo de carga en el resto del Backoffice.
 
 ---
 

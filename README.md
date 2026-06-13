@@ -31,9 +31,14 @@ En lugar de forzar la inyección de las etiquetas alterando las plantillas de fo
 - Esto garantiza compatibilidad al 100% con el tema nativo Classic (y cualquier tema bien programado) ya que inyecta los datos directamente en `$product.flags`.
 - La personalización visual de los colores se soluciona inyectando un bloque CSS dinámico mediante el hook `displayHeader`.
 
-### 3. Validación y Persistencia en el Producto
+### 3. Sanitización y Carga Eficiente de Assets
+Se ha puesto especial foco en el rendimiento y la seguridad del módulo:
+- **Validación y Escapado:** El procesamiento de datos en el Backoffice realiza un casteo estricto a entero `(int)` para los identificadores. Todas las plantillas Smarty utilizan el modificador de escape `|escape:'html':'UTF-8'` para prevenir vulnerabilidades XSS.
+- **Eficiencia de Recursos:** En lugar de inyectar los scripts y hojas de estilo de manera indiscriminada, se utilizan los hooks `actionAdminControllerSetMedia` y `actionFrontControllerSetMedia` para condicionar la carga de `views/js/admin_product_tab.js` y `views/css/productbadges.css` **única y exclusivamente** cuando el controlador activo lo requiere (ej. `AdminProducts`).
+
+### 4. Validación y Persistencia en el Producto
 La asignación de Etiquetas-Productos es una relación M:M (Muchos a Muchos). En lugar de sobrecargar la tabla principal o guardar IDs separados por comas, se creó la tabla `ps_productbadges_product`. 
-- Además, en la ficha de producto se agregó un validador en **JavaScript** que lee el límite `PRODUCTBADGES_MAX_ITEMS` y deshabilita automáticamente las casillas restantes si el usuario intenta seleccionar más etiquetas de las permitidas.
+- Además, en la ficha de producto se agregó un validador en **JavaScript** (cargado de forma eficiente) que lee el límite `PRODUCTBADGES_MAX_ITEMS` y deshabilita automáticamente las casillas restantes si el usuario intenta seleccionar más etiquetas de las permitidas.
 
 ## Asunciones y Consideraciones
 

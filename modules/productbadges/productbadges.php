@@ -83,7 +83,9 @@ class Productbadges extends Module
             $this->registerHook('displayBackOfficeHeader') &&
             $this->registerHook('actionProductFlagsModifier') &&
             $this->registerHook('displayHeader') &&
+            $this->registerHook('actionFrontControllerSetMedia') &&
             $this->registerHook('displayAdminProductsExtra') &&
+            $this->registerHook('actionAdminControllerSetMedia') &&
             $this->registerHook('actionProductUpdate');
     }
 
@@ -323,6 +325,20 @@ class Productbadges extends Module
         return '';
     }
 
+    public function hookActionFrontControllerSetMedia($params)
+    {
+        if (!Configuration::get('PRODUCTBADGES_LIVE')) {
+            return;
+        }
+
+        // Registrar el CSS estático en el frontend
+        $this->context->controller->registerStylesheet(
+            'module-productbadges-style',
+            'modules/' . $this->name . '/views/css/productbadges.css',
+            array('media' => 'all', 'priority' => 200)
+        );
+    }
+
     public function hookDisplayAdminProductsExtra($params)
     {
         $id_product = (int) $params['id_product'];
@@ -360,6 +376,16 @@ class Productbadges extends Module
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/hook/admin_products_extra.tpl');
+    }
+
+    public function hookActionAdminControllerSetMedia($params)
+    {
+        // Solo inyectar en la ficha de producto de Symfony o el legacy AdminProducts
+        if ($this->context->controller->controller_name === 'AdminProducts' || 
+            Tools::getValue('controller') === 'AdminProducts') {
+            
+            $this->context->controller->addJS($this->_path . 'views/js/admin_product_tab.js');
+        }
     }
 
     public function hookActionProductUpdate($params)
