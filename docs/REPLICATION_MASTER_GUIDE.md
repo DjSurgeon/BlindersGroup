@@ -8,10 +8,25 @@ Sigue este *Roadmap* paso a paso para levantar la infraestructura desde cero y c
 
 ## FASE 1: Infraestructura (Docker)
 
-El objetivo es tener un entorno local predecible, con PHP 8.1, MySQL 8.0 y PrestaShop 1.7.8.11, aislado y con soporte para mapeo de volúmenes de desarrollo.
+El objetivo es tener un entorno local predecible, con PHP 7.4, MySQL 8.0 y PrestaShop 1.7.8.11, aislado y con soporte para mapeo de volúmenes de desarrollo.
+
+### 0. Estructura de Directorios Inicial
+Antes de crear los archivos, asegúrate de tener esta estructura vacía para alojar las configuraciones:
+
+```text
+docker-compose/
+├── .env
+├── docker-compose.yml
+├── mysql.cnf
+├── data/
+│   └── apache/
+│       ├── 000-default.conf
+│       └── custom.ini
+└── modules_dev/
+```
 
 ### 1. Variables de Entorno (`.env`)
-Crea un archivo `.env` en tu directorio `docker-compose/`:
+Crea el archivo `.env` en tu directorio `docker-compose/`:
 
 ```env
 # MYSQL - Base de Datos
@@ -35,7 +50,7 @@ ADMIN_MAIL=djsurgeon83@gmail.com
 ADMIN_PASSWD=AdminBlinders2024!
 
 # PHP - Configuración
-PHP_VERSION=8.1
+PHP_VERSION=7.4
 MEMORY_LIMIT=512M
 MAX_EXECUTION_TIME=300
 UPLOAD_MAX_FILESIZE=100M
@@ -122,11 +137,88 @@ services:
       PMA_PORT: 3306
     ports:
       - "8888:80"
+    volumes:
+      - ./data/phpmyadmin:/var/www/html/sessions
     networks:
       - prestashop_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 ```
 
-### 3. Permisos y Troubleshooting (El "Error 500")
+### 3. Configuraciones Complementarias (MySQL, Apache, PHP)
+
+Para que los mapeos de volúmenes del `docker-compose.yml` no den error, debes crear los siguientes 3 ficheros:
+
+**A) `mysql.cnf`** (Optimización de Base de Datos para el contenedor `mysql`):
+```ini
+[mysqld]
+# Conexiones
+max_connections=100
+wait_timeout=600
+interactive_timeout=600
+
+# Buffer
+innodb_buffer_pool_size=256M
+innodb_log_file_size=100M
+max_allowed_packet=64M
+
+# Rendimiento
+innodb_flush_log_at_trx_commit=2
+innodb_flush_method=O_DIRECT
+
+# Logging (mínimo en desarrollo)
+general_log=OFF
+slow_query_log=ON
+slow_query_log_file=/var/log/mysql/slow-query.log
+long_query_time=2
+
+# Charset
+character_set_server=utf8mb4
+collation_server=utf8mb4_unicode_ci
+```
+
+**B) `data/apache/000-default.conf`** (VirtualHost de Apache en el contenedor `prestashop`):
+```apache
+<VirtualHost *:80>
+    ServerName prestashop.local
+    ServerAlias admin.prestashop.local
+    DocumentRoot /var/www/html
+
+    <Directory /var/www/html>
+        AllowOverride All
+        Order Allow,Deny
+        Allow from all
+        <IfModule mod_rewrite.c>
+            RewriteEngine On
+            RewriteBase /
+            RewriteCond %{REQUEST_FILENAME} !-f
+            RewriteCond %{REQUEST_FILENAME} !-d
+            RewriteRule ^(.*)$ index.php?$1 [QSA,L]
+        </IfModule>
+    </Directory>
+
+    <FilesMatch "\.php$">
+        SetHandler "proxy:unix:/run/php-fpm.sock|fcgi://localhost"
+    </FilesMatch>
+
+    ErrorLog /var/log/apache2/error.log
+    CustomLog /var/log/apache2/access.log combined
+</VirtualHost>
+```
+
+**C) `data/apache/custom.ini`** (Reglas PHP personalizadas):
+```ini
+memory_limit = 512M
+max_execution_time = 300
+upload_max_filesize = 100M
+post_max_size = 100M
+max_input_vars = 10000
+```
+
+### 4. Permisos y Troubleshooting (El "Error 500")
 **Regla de Oro:** Si en algún momento necesitas borrar la caché desde tu terminal o modificas archivos como `root`, PrestaShop puede lanzar un "Error 500" o un error de escritura de Symfony.
 **Solución:** Restaura los permisos de Apache en el contenedor:
 ```bash
