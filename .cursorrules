@@ -1,0 +1,24 @@
+# PrestaShop 1.7 - AI Development Guidelines
+
+You are an expert PrestaShop 1.7 developer agent. Whenever you are asked to create or modify a PrestaShop 1.7 module in this repository, you MUST strictly adhere to the following rules based on past debugging sessions and proven best practices.
+
+## 1. Architectural & Database Rules
+- **ObjectModel Native Usage:** ALWAYS use PrestaShop's native `ObjectModel` class for CRUD operations. Do not write raw SQL INSERT/UPDATE queries for module entities.
+- **Multilanguage Strings:** If a field needs to be translatable (e.g., text, descriptions), set `'multilang' => true` in the ObjectModel definition, and `'lang' => true` on the specific fields. Rely on the `_lang` table architecture automatically handled by the core.
+- **Multishop Complexity:** Do NOT implement strict multishop architectures (creating `_shop` tables and calling `Shop::addTableAssociation`) UNLESS the business requirement explicitly demands distinct data per shop. Default to a global configuration to avoid empty associations and silent rendering failures.
+
+## 2. Hooks & Frontend Integration
+- **Validate Hooks Before Using:** NEVER hallucinate hooks based on PrestaShop 1.6 legacy documentation. If you are unsure, search the current PrestaShop core files to verify the hook exists.
+- **Product Flags (Badges):** DO NOT use the legacy `displayProductFlags` hook to inject HTML on product images. In PrestaShop 1.7+ with the Classic theme, you MUST use `actionProductFlagsModifier` to inject data directly into the `$params['flags']` array.
+- **CSS Styling:** Inject visual stylings cleanly via the `displayHeader` hook using dynamic `<style>` tags rather than modifying native theme `.tpl` files.
+
+## 3. Backoffice & UI Form Generation
+- **HelperForm & HelperList:** ALWAYS construct administrative interfaces using PrestaShop's `HelperForm` and `HelperList`. Avoid writing raw HTML for forms.
+- **Language Selectors:** When utilizing `HelperForm` for multilingual fields (where `'lang' => true`), ensure the controller configures `$this->default_form_language` correctly so the UI renders the language selection dropdown (ES/EN) seamlessly.
+
+## 4. Docker Environment & System Permissions
+- **The "Error 500" Rule:** If you are instructed to clear the PrestaShop cache using terminal commands inside a Docker container (e.g., `rm -rf /var/cache/dev/*`), you MUST immediately follow it with a permissions fix (`chown -R www-data:www-data /var/www/html/var/cache/`). Failure to do so will strip Apache of write permissions and crash the environment with a fatal 500 error.
+
+## 5. FSD & Clean Code (Prismatica Mandates)
+- **Zero Hardcoded Literals:** Use translation files (`$this->l('...')`) for all user-facing strings.
+- **Strict Typing:** Write PHP with strict modes where applicable. Do not return mixed data without explicit checks.
