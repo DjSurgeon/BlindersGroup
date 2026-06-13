@@ -29,6 +29,9 @@ class AdminProductBadgesController extends ModuleAdminController
         $this->identifier = 'id_productbadge';
         
         parent::__construct();
+
+        $this->addRowAction('edit');
+        $this->addRowAction('delete');
         
         $this->fields_list = array(
             'id_productbadge' => array(
@@ -43,14 +46,17 @@ class AdminProductBadgesController extends ModuleAdminController
             ),
             'bg_color' => array(
                 'title' => $this->l('Background Color'),
-                'type' => 'color',
+                'callback' => 'displayColorBg',
+                'search' => false,
             ),
             'text_color' => array(
                 'title' => $this->l('Text Color'),
-                'type' => 'color',
+                'callback' => 'displayColorText',
+                'search' => false,
             ),
             'position' => array(
                 'title' => $this->l('Position'),
+                'align' => 'center',
             ),
             'active' => array(
                 'title' => $this->l('Active'),
@@ -60,6 +66,24 @@ class AdminProductBadgesController extends ModuleAdminController
                 'class' => 'fixed-width-sm',
             ),
         );
+
+        if (Shop::isFeatureActive() && Shop::getContext() == Shop::CONTEXT_SHOP) {
+            $this->_join .= ' INNER JOIN `'._DB_PREFIX_.'productbadges_shop` s 
+                ON (a.`id_productbadge` = s.`id_productbadge` AND s.`id_shop` = '.(int)$this->context->shop->id.')';
+            $this->fields_list['active']['filter_key'] = 's!active';
+        } else {
+            $this->fields_list['active']['filter_key'] = 'a!active';
+        }
+    }
+
+    public function displayColorBg($color, $row)
+    {
+        return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
+    }
+
+    public function displayColorText($color, $row)
+    {
+        return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
     }
 
     public function renderForm()

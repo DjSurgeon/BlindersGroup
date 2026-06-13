@@ -2,10 +2,19 @@
 /**
  * @version 1.0.0
  * @author Sergio Jimenez
+ * @last_modified 2026-06-11
+ * @related_html none
+ * @database productbadges, productbadges_shop, productbadges_lang, productbadges_product
  */
 
 require_once dirname(__FILE__) . '/../../classes/ProductBadgeModel.php';
 
+/**
+ * Admin Controller for managing Product Badges.
+ * 
+ * @package productbadges
+ * @category admin_controllers
+ */
 class AdminProductBadgesController extends ModuleAdminController
 {
     public function __construct()
@@ -20,6 +29,9 @@ class AdminProductBadgesController extends ModuleAdminController
         $this->identifier = 'id_productbadge';
         
         parent::__construct();
+
+        $this->addRowAction('edit');
+        $this->addRowAction('delete');
         
         $this->fields_list = array(
             'id_productbadge' => array(
@@ -34,14 +46,17 @@ class AdminProductBadgesController extends ModuleAdminController
             ),
             'bg_color' => array(
                 'title' => $this->l('Background Color'),
-                'type' => 'color',
+                'callback' => 'displayColorBg',
+                'search' => false,
             ),
             'text_color' => array(
                 'title' => $this->l('Text Color'),
-                'type' => 'color',
+                'callback' => 'displayColorText',
+                'search' => false,
             ),
             'position' => array(
                 'title' => $this->l('Position'),
+                'align' => 'center',
             ),
             'active' => array(
                 'title' => $this->l('Active'),
@@ -51,11 +66,28 @@ class AdminProductBadgesController extends ModuleAdminController
                 'class' => 'fixed-width-sm',
             ),
         );
+
+        if (Shop::isFeatureActive() && Shop::getContext() == Shop::CONTEXT_SHOP) {
+            $this->_join .= ' INNER JOIN `'._DB_PREFIX_.'productbadges_shop` s 
+                ON (a.`id_productbadge` = s.`id_productbadge` AND s.`id_shop` = '.(int)$this->context->shop->id.')';
+            $this->fields_list['active']['filter_key'] = 's!active';
+        } else {
+            $this->fields_list['active']['filter_key'] = 'a!active';
+        }
+    }
+
+    public function displayColorBg($color, $row)
+    {
+        return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
+    }
+
+    public function displayColorText($color, $row)
+    {
+        return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
     }
 
     public function renderForm()
     {
-        // Load the product IDs for this badge if we are editing
         $product_ids_str = '';
         if ($this->display == 'edit' && $this->object && $this->object->id) {
             $product_ids = $this->object->getProducts();
@@ -145,7 +177,6 @@ class AdminProductBadgesController extends ModuleAdminController
     public function postProcess()
     {
         if (Tools::isSubmit('submitAddproductbadges')) {
-            // Server-side validation for colors
             $bg_color = Tools::getValue('bg_color');
             $text_color = Tools::getValue('text_color');
             
@@ -156,13 +187,11 @@ class AdminProductBadgesController extends ModuleAdminController
                 $this->errors[] = $this->l('Invalid text color format. It must be a valid HEX color (e.g., #FFFFFF).');
             }
 
-            // Validate position
             $position = Tools::getValue('position');
             if (!in_array($position, array('top-left', 'top-right'))) {
                 $this->errors[] = $this->l('Invalid position selected.');
             }
 
-            // Validate product IDs
             $product_ids_raw = Tools::getValue('product_ids');
             if (!empty($product_ids_raw)) {
                 $ids = explode(',', $product_ids_raw);
@@ -210,7 +239,6 @@ class AdminProductBadgesController extends ModuleAdminController
             }
         }
         
-        // Use the model's method to handle M:M relations
         $object->updateProducts($valid_ids);
     }
 }
