@@ -240,6 +240,11 @@ Una vez tengas la estructura completa, abre tu terminal en el directorio `docker
   ```bash
   docker-compose down
   ```
+- **Destruir el entorno completamente (Reset desde cero):**
+  Borrará contenedores, redes y **los volúmenes de datos** (ideal si la BD se corrompe o quieres volver a instalar PrestaShop de fábrica):
+  ```bash
+  docker-compose down -v --remove-orphans
+  ```
 
 > [!TIP]
 > **Acceso:** Cuando los logs confirmen que Apache está listo, entra a la tienda pública en `http://prestashop.local:8080` y a tu Backoffice en `http://prestashop.local:8080/admin_xyz123blinders` (usuario: `djsurgeon83@gmail.com` / clave: `AdminBlinders2024!`).
