@@ -25,6 +25,8 @@ class ProductBadgeModel extends ObjectModel
     public $date_upd;
     public $text;
 
+
+
     public static $definition = array(
         'table' => 'productbadges',
         'primary' => 'id_productbadge',

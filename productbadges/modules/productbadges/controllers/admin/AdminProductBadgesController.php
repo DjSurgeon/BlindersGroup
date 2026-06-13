@@ -67,13 +67,6 @@ class AdminProductBadgesController extends ModuleAdminController
             ),
         );
 
-        if (Shop::isFeatureActive() && Shop::getContext() == Shop::CONTEXT_SHOP) {
-            $this->_join .= ' INNER JOIN `'._DB_PREFIX_.'productbadges_shop` s 
-                ON (a.`id_productbadge` = s.`id_productbadge` AND s.`id_shop` = '.(int)$this->context->shop->id.')';
-            $this->fields_list['active']['filter_key'] = 's!active';
-        } else {
-            $this->fields_list['active']['filter_key'] = 'a!active';
-        }
     }
 
     public function displayColorBg($color, $row)

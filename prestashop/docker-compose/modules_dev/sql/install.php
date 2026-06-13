@@ -20,21 +20,13 @@ $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges` (
     PRIMARY KEY  (`id_productbadge`)
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 
-$sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_shop` (
-    `id_productbadge` int(11) NOT NULL,
-    `id_shop` int(11) NOT NULL,
-    `active` tinyint(1) unsigned NOT NULL DEFAULT \'0\',
-    PRIMARY KEY  (`id_productbadge`, `id_shop`),
-    KEY `id_shop` (`id_shop`),
-    CONSTRAINT `FK_pb_shop` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
-) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
+
 
 $sql[] = 'CREATE TABLE IF NOT EXISTS `' . _DB_PREFIX_ . 'productbadges_lang` (
     `id_productbadge` int(11) NOT NULL,
     `id_lang` int(11) NOT NULL,
-    `id_shop` int(11) NOT NULL,
     `text` varchar(255) NOT NULL,
-    PRIMARY KEY  (`id_productbadge`, `id_shop`, `id_lang`),
+    PRIMARY KEY  (`id_productbadge`, `id_lang`),
     CONSTRAINT `FK_pb_lang` FOREIGN KEY (`id_productbadge`) REFERENCES `' . _DB_PREFIX_ . 'productbadges` (`id_productbadge`) ON DELETE CASCADE
 ) ENGINE=' . _MYSQL_ENGINE_ . ' DEFAULT CHARSET=utf8;';
 

@@ -11,7 +11,6 @@ $sql = array();
 
 $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_product`;';
 $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_lang`;';
-$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges_shop`;';
 $sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'productbadges`;';
 
 $success = true;

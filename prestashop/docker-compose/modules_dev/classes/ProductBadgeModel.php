@@ -25,12 +25,12 @@ class ProductBadgeModel extends ObjectModel
     public $date_upd;
     public $text;
 
+
+
     public static $definition = array(
         'table' => 'productbadges',
         'primary' => 'id_productbadge',
         'multilang' => true,
-        'multilang_shop' => true,
-        'multishop' => true,
         'fields' => array(
             'bg_color'   => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
             'text_color' => array('type' => self::TYPE_STRING, 'validate' => 'isString', 'required' => true, 'size' => 32),
