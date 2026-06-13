@@ -34,3 +34,29 @@
         </div>
     {/if}
 </div>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        var maxItems = {$max_items|intval};
+        if (maxItems <= 0) return; // 0 significa sin límite
+
+        var checkboxes = document.querySelectorAll('input[name="productbadges[]"]');
+        
+        function updateCheckboxes() {
+            var checkedCount = document.querySelectorAll('input[name="productbadges[]"]:checked').length;
+            
+            checkboxes.forEach(function(cb) {
+                if (!cb.checked) {
+                    cb.disabled = (checkedCount >= maxItems);
+                }
+            });
+        }
+        
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', updateCheckboxes);
+        });
+        
+        // Initial state check
+        updateCheckboxes();
+    });
+</script>

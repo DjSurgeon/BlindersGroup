@@ -356,6 +356,7 @@ class Productbadges extends Module
         $this->context->smarty->assign(array(
             'productbadges' => $badges,
             'assigned_badges' => $assigned_ids,
+            'max_items' => (int) Configuration::get('PRODUCTBADGES_MAX_ITEMS')
         ));
 
         return $this->display(__FILE__, 'views/templates/admin/hook/admin_products_extra.tpl');
