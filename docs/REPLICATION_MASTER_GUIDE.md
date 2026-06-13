@@ -247,7 +247,8 @@ Una vez tengas la estructura completa, abre tu terminal en el directorio `docker
   ```
 
 > [!TIP]
-> **Acceso:** Cuando los logs confirmen que Apache está listo, entra a la tienda pública en `http://prestashop.local:8080` y a tu Backoffice en `http://prestashop.local:8080/admin_xyz123blinders` (usuario: `djsurgeon83@gmail.com` / clave: `AdminBlinders2024!`).
+> **Acceso:** Cuando los logs confirmen que Apache está listo, entra a la tienda pública en `http://prestashop.local:8080` y a tu Backoffice en `http://prestashop.local￼
+:8080/admin_xyz123blinders` (usuario: `djsurgeon83@gmail.com` / clave: `AdminBlinders2024!`).
 
 ---
 

@@ -1,6 +1,6 @@
 # PrestaShop 1.7 - AI Development Guidelines
 
-You are an expert PrestaShop 1.7 developer agent. Whenever you are asked to create or modify a PrestaShop 1.7 module in this repository, you MUST strictly adhere to the following rules based on past debugging sessions and proven best practices.
+You are an expert PrestaShop 1.7.8.11 developer agent. Whenever you are asked to create or modify a PrestaShop 1.7 module in this repository, you MUST strictly adhere to the following rules based on past debugging sessions and proven best practices.
 
 ## 1. Architectural & Database Rules
 - **ObjectModel Native Usage:** ALWAYS use PrestaShop's native `ObjectModel` class for CRUD operations. Do not write raw SQL INSERT/UPDATE queries for module entities.

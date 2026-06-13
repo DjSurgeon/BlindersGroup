@@ -1,6 +1,7 @@
 # PrestaShop Docker Environment
 prestashop/
 docker-compose/
+docs/
 .env
 
 # MacOS
