@@ -81,7 +81,8 @@ class Productbadges extends Module
             $this->installTab() &&
             $this->installConfiguration() &&
             $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('displayProductFlags') &&
+            $this->registerHook('actionProductFlagsModifier') &&
+            $this->registerHook('displayHeader') &&
             $this->registerHook('displayAdminProductsExtra') &&
             $this->registerHook('actionProductUpdate');
     }
@@ -246,9 +247,80 @@ class Productbadges extends Module
         );
     }
 
-    public function hookDisplayProductFlags($params)
+    public function hookActionProductFlagsModifier($params)
     {
-        return array();
+        if (!Configuration::get('PRODUCTBADGES_LIVE')) {
+            return;
+        }
+
+        $controller_name = Tools::getValue('controller');
+        if (!$controller_name && isset($this->context->controller->php_self)) {
+            $controller_name = $this->context->controller->php_self;
+        }
+
+        $is_product_page = ($controller_name === 'product');
+
+        if ($is_product_page && !Configuration::get('PRODUCTBADGES_USE_PRODUCT')) {
+            return;
+        }
+        if (!$is_product_page && !Configuration::get('PRODUCTBADGES_USE_LIST')) {
+            return;
+        }
+
+        $id_product = (int) $params['product']['id_product'];
+        if (!$id_product) {
+            return;
+        }
+
+        $max_items = (int) Configuration::get('PRODUCTBADGES_MAX_ITEMS');
+        if ($max_items <= 0) {
+            $max_items = 999;
+        }
+
+        $id_lang = (int) $this->context->language->id;
+
+        $badges = Db::getInstance()->executeS(
+            'SELECT a.`id_productbadge`, a.`position`, b.`text`
+             FROM `' . _DB_PREFIX_ . 'productbadges` a
+             INNER JOIN `' . _DB_PREFIX_ . 'productbadges_product` pp ON (a.`id_productbadge` = pp.`id_productbadge`)
+             LEFT JOIN `' . _DB_PREFIX_ . 'productbadges_lang` b ON (a.`id_productbadge` = b.`id_productbadge` AND b.`id_lang` = ' . $id_lang . ')
+             WHERE pp.`id_product` = ' . $id_product . ' AND a.`active` = 1
+             LIMIT ' . $max_items
+        );
+
+        if ($badges) {
+            foreach ($badges as $badge) {
+                $type = 'productbadge-' . $badge['id_productbadge'];
+                if ($badge['position'] == 'top-right') {
+                    $type .= ' pb-right';
+                }
+                
+                $params['flags'][$type] = array(
+                    'type' => $type,
+                    'label' => $badge['text']
+                );
+            }
+        }
+    }
+
+    public function hookDisplayHeader($params)
+    {
+        if (!Configuration::get('PRODUCTBADGES_LIVE')) {
+            return;
+        }
+
+        $badges = Db::getInstance()->executeS(
+            'SELECT `id_productbadge`, `bg_color`, `text_color`, `position` 
+             FROM `' . _DB_PREFIX_ . 'productbadges` 
+             WHERE `active` = 1'
+        );
+
+        if ($badges) {
+            $this->context->smarty->assign('productbadges_css', $badges);
+            return $this->display(__FILE__, 'views/templates/front/header.tpl');
+        }
+
+        return '';
     }
 
     public function hookDisplayAdminProductsExtra($params)
