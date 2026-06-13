@@ -1,0 +1,26 @@
+# Plan de Implementación: Rollback del Filtro MultiTienda
+
+## Propósito
+Dado que el motor multitienda de PrestaShop 1.7 está bloqueando la inserción nativa en la tabla `_shop` y esto provoca que el listado desaparezca, vamos a realizar un *rollback* controlado.
+Volveremos al estado en el que el controlador leía directamente de la tabla principal `ps_productbadges`, permitiendo que todos los badges (independientemente de la tienda) sean visibles y gestionables en el Backoffice. Mantendremos las mejoras visuales (callbacks de colores) ya que no afectan a este problema.
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+1. **Eliminar el bloque del INNER JOIN**:
+   Buscaremos al final del constructor el bloque condicional de `Shop::isFeatureActive()` que inyectaba el `INNER JOIN` y cambiaba dinámicamente el `filter_key` de la columna `active`, y lo **eliminaremos por completo**.
+   
+   *Nota: Al hacer esto, el listado base volverá a ser simplemente `a.*` y `b.*`, por lo que todas las etiquetas volverán a aparecer.*
+
+#### [MODIFY] [ProductBadgeModel.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/classes/ProductBadgeModel.php)
+1. **Eliminar el constructor sobrescrito (`__construct`)**:
+   Eliminaremos la inyección manual de `Shop::addTableAssociation(...)` que añadimos recientemente, devolviendo el modelo a su estado natural para evitar cualquier comportamiento inesperado de memoria estática.
+2. **Revertir el flag `shop => true`** en la definición del campo `active` para que vuelva a su estado original (`'active' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true)`).
+
+## Verification Plan
+1. Se aplicarán estas tres reversiones de código.
+2. Sincronizaremos con el entorno git.
+3. Al refrescar la ventana de "Product Badges" en el Backoffice, volverás a ver inmediatamente el listado con los 6 badges que tienes creados (con sus colores pintados correctamente).
+4. A partir de este punto estable y funcional, podremos diseñar una estrategia alternativa si decidimos que la gestión multitienda es estrictamente necesaria.

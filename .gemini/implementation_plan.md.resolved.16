@@ -1,0 +1,46 @@
+# Plan de Corrección: Inconsistencia MultiTienda (Listado Vacío)
+
+## Análisis del Problema
+
+Has hecho una depuración excelente de la base de datos. Los datos demuestran lo siguiente:
+- Las tablas `ps_productbadges` y `ps_productbadges_lang` se están llenando correctamente.
+- **La tabla `ps_productbadges_shop` está VACÍA.**
+
+**1. ¿Por qué no se renderizan en el Backoffice?**
+En nuestro `AdminProductBadgesController`, hemos configurado la siguiente consulta para que funcione de forma nativa con MultiShop:
+```php
+$this->_join .= ' INNER JOIN `'._DB_PREFIX_.'productbadges_shop` s ...';
+```
+Un `INNER JOIN` es una intersección estricta. Al estar la tabla `_shop` vacía, la base de datos no encuentra coincidencias entre la tabla principal y la de tiendas, devolviendo exactamente **0 resultados**. Por eso el listado está en blanco.
+
+**2. ¿Por qué la tabla `_shop` está vacía si el modelo guarda el resto bien?**
+En `ProductBadgeModel.php` añadimos la configuración `'multishop' => true`. Esto le dice al ORM de PrestaShop: *"Oye, existe una tabla de tiendas"*. 
+**Sin embargo**, para que el método `save()` de `ObjectModel` inserte datos automáticamente en esa tabla `_shop`, necesita saber **qué campos** pertenecen a ella. 
+En nuestra definición de tabla (`sql/install.php`), especificamos que la tabla `_shop` lleva el campo `active`. Pero en nuestro array `$definition` del modelo, se nos olvidó decirle a PrestaShop que ese campo es multi-tienda.
+
+Al no haber ningún campo con el flag `'shop' => true`, PrestaShop ignora por completo la inserción en la tabla `productbadges_shop`.
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [ProductBadgeModel.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/classes/ProductBadgeModel.php)
+
+Debemos modificar la definición del campo `active` en la clase del modelo para incluir el flag `'shop' => true`.
+
+**Actualmente:**
+```php
+'active' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true),
+```
+
+**Nuevo:**
+```php
+'active' => array('type' => self::TYPE_BOOL, 'validate' => 'isBool', 'required' => true, 'shop' => true),
+```
+*Con este simple cambio, cada vez que creemos o editemos una etiqueta, PrestaShop detectará el flag `'shop'` e insertará/actualizará automáticamente una fila en `ps_productbadges_shop` con el estado de activación de la tienda actual.*
+
+## Verification Plan
+1. Aplicaremos el parche en el `ProductBadgeModel.php` y sincronizaremos los cambios.
+2. Dado que actualmente tienes 4 registros "huérfanos" (existen en la principal pero no en la tienda), si recargas el Backoffice seguirán sin salir. 
+3. Te pediré que, o bien insertes manualmente un registro en `ps_productbadges_shop` para el badge ID 4 (ej. `INSERT INTO ps_productbadges_shop VALUES (4, 1, 1);`), o simplemente crees una **Nueva Etiqueta** desde el botón "Añadir nuevo".
+4. Al crear la nueva etiqueta, verificaremos que se guarda correctamente en la tabla `_shop` y que aparece inmediatamente renderizada en el listado.

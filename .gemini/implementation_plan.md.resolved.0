@@ -1,0 +1,48 @@
+# Plan de Implementación: Estructura Base del Módulo Product Badges
+
+Este plan detalla la creación de la estructura base de carpetas y archivos *boilerplate* para el módulo `productbadges`. No se implementará la lógica profunda de instalación o bases de datos aún, solo se dejará el cascarón preparado y conectado para la siguiente fase.
+
+> [!NOTE]
+> Los archivos se crearán en el directorio `~/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/` ya que es la carpeta que está montada directamente en el contenedor de Docker y te permitirá ver los cambios en tiempo real. Posteriormente podrás copiarlos/sincronizarlos a tu repositorio de git.
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. ¿Quieres que también copie automáticamente estos archivos generados a la carpeta de tu repositorio (`~/vscode/prueba-tecnica/test1/productbadges/modules/productbadges/`) para que estén versionados desde el principio?
+> 2. Para el `logo.png`, ¿prefieres que genere un ícono básico de prueba (32x32px) usando un pequeño script o simplemente creo un archivo de texto vacío renombrado a png por ahora?
+
+## Proposed Changes
+
+### Estructura Base del Módulo
+
+Crearemos los siguientes archivos con una estructura básica orientada a objetos, cumpliendo las normativas de PrestaShop 1.7.8 y PSR-12:
+
+#### [NEW] [productbadges.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/productbadges.php)
+- Clase principal `ProductBadges` que extiende de `Module`.
+- Constructor `__construct()` con metadatos base (nombre, tab, versión 1.0.0, autor, bootstrap = true).
+- Métodos vacíos `install()` y `uninstall()` con llamadas `parent::install()` listas para ser rellenadas.
+- PHPDocs y control de seguridad de carga (`if (!defined('_PS_VERSION_')) exit;`).
+
+#### [NEW] [config.xml](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/config.xml)
+- Esqueleto XML vacío o básico (PrestaShop lo sobreescribe cuando se instala el módulo, pero dejaremos un cascarón válido).
+
+#### [NEW] [logo.png](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/logo.png)
+- Archivo binario básico de 32x32 píxeles para que el módulo no se muestre con un logo roto en la lista de módulos del backoffice.
+
+### Scripts de Base de Datos
+
+#### [NEW] [install.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/install.php)
+- Archivo PHP con control de seguridad inicial.
+- Definición de un array `$sql = array();` vacío preparado para inyectar las tablas más adelante.
+- Bucle iterativo de ejecución a través de `Db::getInstance()->execute($query)`.
+
+#### [NEW] [uninstall.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/uninstall.php)
+- Similar al install, pero preparado para ejecutar consultas de tipo `DROP TABLE`.
+
+## Verification Plan
+
+### Manual Verification
+1. Entrar al Backoffice de PrestaShop.
+2. Ir a la sección **Módulos > Catálogo de Módulos**.
+3. Buscar `productbadges` o "Badges de Productos".
+4. El módulo debe aparecer en el listado con el logo, descripción y el botón de "Instalar" (aunque la instalación aún no hará nada más que registrar el módulo nativamente).

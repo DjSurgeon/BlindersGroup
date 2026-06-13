@@ -1,0 +1,36 @@
+# Plan de Implementación: Scripts SQL (Install / Uninstall)
+
+Este plan define la actualización de los scripts de base de datos del módulo `productbadges`. El objetivo es garantizar una creación segura de las tablas (con un sistema de *rollback* anti-zombies) y una eliminación limpia durante la desinstalación.
+
+## Propósito
+- Implementar la creación de las 4 tablas principales (`productbadges`, `_shop`, `_lang`, `_product`) usando el esquema proporcionado.
+- Añadir Foreign Keys (`ON DELETE CASCADE`) para mantener la integridad referencial y limpiar automáticamente las relaciones si se borra una badge.
+- Implementar un mecanismo de rollback: si una de las tablas falla al crearse, se invoca automáticamente el script de desinstalación para borrar las que sí se hayan creado, evitando dejar "tablas zombie" a medias.
+- **Importante:** No realizaré ningún commit. Esta acción quedará de tu lado, como indicaste.
+
+## Proposed Changes
+
+### [MODIFY] [sql/install.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/install.php)
+Sustituir el esqueleto actual por la lógica real de creación de tablas.
+- Añadir la creación de `productbadges` (Tabla principal).
+- Añadir la creación de `productbadges_shop` (Relación tienda).
+- Añadir la creación de `productbadges_lang` (Textos multiidioma).
+- Añadir la creación de `productbadges_product` (Relación M:M con productos).
+- Modificar el bucle `foreach` para que, en caso de que `Db::getInstance()->execute($query)` devuelva `false`, se incluya `uninstall.php` y se cancele el proceso, haciendo el rollback de las tablas huérfanas.
+
+### [MODIFY] [sql/uninstall.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/uninstall.php)
+Sustituir el esqueleto actual por la lógica de destrucción (DROP).
+- Añadir consultas `DROP TABLE IF EXISTS` para las 4 tablas.
+- **Orden crítico:** Primero se borrarán las tablas hijas (`_product`, `_lang`, `_shop`) y por último la tabla padre (`productbadges`). Esto evitará violaciones de las restricciones de clave foránea (*Foreign Key constraints*) al hacer los DROPs.
+
+## Verification Plan
+
+### Test de instalación limpia
+1. Entrar al backoffice de PrestaShop.
+2. Ir a Módulos y buscar "Product Badges".
+3. Hacer clic en **Instalar**.
+4. Usar PhpMyAdmin (`http://localhost:8888`) o la terminal para verificar que las 4 tablas `ps_productbadges*` se crearon correctamente con sus Foreign Keys.
+
+### Test de desinstalación limpia
+1. En el backoffice, hacer clic en **Desinstalar** el módulo.
+2. Comprobar en PhpMyAdmin que las 4 tablas desaparecieron por completo sin dejar rastros (cero zombies).

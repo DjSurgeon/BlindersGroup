@@ -1,0 +1,6 @@
+- [/] Crear logo con IA
+- [ ] Crear productbadges.php
+- [ ] Crear config.xml
+- [ ] Crear sql/install.php
+- [ ] Crear sql/uninstall.php
+- [ ] Sincronizar archivos al directorio de git y hacer commit inicial

@@ -1,0 +1,49 @@
+# Plan de Corrección: PrestaShopDatabaseException (Ambigüedad SQL)
+
+## Análisis del Error
+
+**El error devuelto:**
+`Column 'id_productbadge' in field list is ambiguous`
+
+**¿Por qué sucede?**
+Cuando abres el listado en el Backoffice, `AdminControllerCore` construye automáticamente una consulta SQL (HelperList) combinando la tabla principal (`ps_productbadges` alias `a`) con la tabla de traducciones (`ps_productbadges_lang` alias `b`).
+
+Al declarar nuestro array `$this->fields_list` así:
+```php
+'id_productbadge' => array(
+    'title' => $this->l('ID'),
+    // ...
+)
+```
+PrestaShop inserta literalmente `id_productbadge` en la cláusula `SELECT`. Pero como ambas tablas (`a` y `b`) tienen una columna llamada `id_productbadge`, MySQL colapsa y arroja el error "ambiguous" (no sabe de cuál de las dos tablas debe coger el ID).
+
+Además, he detectado otro fallo derivado: la cláusula `ORDER BY` intenta ordenar por `a.id_productbadges` (plural) en lugar de `id_productbadge` (singular). Esto ocurre porque no definimos explícitamente `$this->identifier` en el constructor, y PrestaShop asume por defecto que es `id_` + el nombre de la tabla (`id_productbadges`).
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+
+1. **Definir el Identifier**:
+   En el constructor, antes de `parent::__construct()`, forzaremos la variable `$this->identifier` para evitar el plural automático:
+   ```php
+   $this->identifier = 'id_productbadge';
+   ```
+
+2. **Añadir el `filter_key` al `fields_list`**:
+   Para arreglar la ambigüedad en MySQL, le diremos explícitamente a PrestaShop que cuando seleccione o filtre por el ID, use siempre el de la tabla principal (`a`). Añadiremos `'filter_key' => 'a!id_productbadge'`:
+   ```php
+   'id_productbadge' => array(
+       'title' => $this->l('ID'),
+       'align' => 'center',
+       'class' => 'fixed-width-xs',
+       'filter_key' => 'a!id_productbadge' // <-- SOLUCIONA LA AMBIGÜEDAD
+   ),
+   ```
+
+## Verification Plan
+1. Se aplicarán estos dos pequeños ajustes al controlador.
+2. Se sincronizará a la carpeta del repositorio git local.
+3. El usuario refrescará la pestaña en el Backoffice.
+4. La tabla de listado cargará instantáneamente, esta vez renderizando la consulta SQL perfecta sin ambigüedades.

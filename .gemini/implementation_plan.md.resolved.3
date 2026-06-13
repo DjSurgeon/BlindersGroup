@@ -1,0 +1,44 @@
+# Plan de Implementación: Fase 2 - ObjectModel (`ProductBadge`)
+
+Con la base de datos instalando y desinstalando a la perfección, el siguiente paso según nuestro flujo es implementar la capa de abstracción de datos utilizando el ORM nativo de PrestaShop: `ObjectModel`.
+
+## Propósito
+Crear la clase `ProductBadge` que mapee automáticamente con las tablas `productbadges`, `productbadges_lang` y `productbadges_shop`. Además, como PrestaShop no gestiona nativamente relaciones Muchos a Muchos (M:M) en ObjectModel de manera automática, incluiremos métodos personalizados para interactuar con la tabla `productbadges_product`.
+
+## Proposed Changes
+
+### [NEW] [classes/ProductBadge.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/classes/ProductBadge.php)
+
+Crearemos esta nueva clase heredando de `ObjectModel` con la siguiente estructura:
+
+**1. Propiedades Públicas**
+- `$bg_color`, `$text_color`, `$position`, `$active`, `$date_add`, `$date_upd` (Campos base).
+- `$text` (Campo multi-idioma).
+
+**2. Definición Estática (`$definition`)**
+- `table` = 'productbadges'
+- `primary` = 'id_productbadge'
+- `multilang` = true (Para auto-mapear con la tabla `_lang`)
+- `multishop` = true (Para auto-mapear con la tabla `_shop`)
+- Array de `fields` con las validaciones nativas de PrestaShop (`Validate::isColorHexValue`, `Validate::isBool`, etc.).
+
+**3. Métodos Personalizados para M:M (`productbadges_product`)**
+- `public function getProducts()`: Devuelve un array con los IDs de productos asociados a esta badge.
+- `public function addProducts($product_ids)`: Asocia un array de productos a la badge.
+- `public function deleteProducts()`: Limpia las asociaciones de esta badge.
+- `public function delete()`: Haremos un override (o usaremos los hooks) para asegurarnos de invocar `deleteProducts()` antes/después de borrar la badge, aunque tu FK con `ON DELETE CASCADE` ya hace este trabajo a nivel de MySQL (¡lo cual es excelente!), lo dejaremos documentado.
+
+**4. Método Estático Auxiliar**
+- `public static function getBadgesForProduct($id_product, $id_lang, $id_shop)`: Un helper clave para la Fase 4, que usaremos en el frontend para obtener rápidamente qué badges debe mostrar un producto concreto.
+
+## Verification Plan
+
+### Test por Código
+Te proporcionaré un pequeño script temporal que pondremos en el `install()` o en la raíz para probar:
+1. Crear una nueva Badge programáticamente.
+2. Añadirle el texto "OFERTA" en español.
+3. Vincularlo a la tienda actual y al producto con ID 1.
+4. Leer la Badge y comprobar que devuelve los datos correctos.
+
+> [!IMPORTANT]
+> **Pregunta para ti:** ¿Estás de acuerdo con este enfoque? Si me das luz verde, genero el archivo `ProductBadge.php` en la carpeta `classes/` del módulo.

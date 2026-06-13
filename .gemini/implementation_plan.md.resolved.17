@@ -1,0 +1,52 @@
+# Análisis de la Inconsistencia: Tabla _shop vacía y duplicados en _lang
+
+Siguiendo tus instrucciones, no crearé código, solo analizaré línea por línea el comportamiento interno del ORM (`ObjectModel`) de PrestaShop para explicar exactamente qué está pasando y por qué se generan estos datos.
+
+## Análisis de las Tablas (La Inconsistencia)
+
+1. **`ps_productbadges_lang` (La "Duplicación"):** 
+   Has notado que se generan registros para `id_lang = 1` y `id_lang = 2` para cada etiqueta, y además se multiplican por `id_shop`. 
+   Esto **NO** es un error, es el comportamiento 100% nativo de PrestaShop 1.7. Al tener `multilang_shop => true` y `multilang => true`, el ORM itera sobre todos los idiomas instalados (`id_lang`) y todas las tiendas del contexto (`id_shop`) cruzándolos y guardando traducciones para cada posible combinación Tienda-Idioma. PrestaShop necesita estas copias físicas en la BD para aislar traducciones por tienda.
+
+2. **`ps_productbadges_shop` (Vacía):**
+   A pesar de tener `'multishop' => true` y haber añadido `'shop' => true` en el campo `active`, la tabla sigue vacía. ¿Por qué?
+
+## Origen del Fallo (El Core de PrestaShop)
+
+He inspeccionado en tiempo real el archivo `/classes/ObjectModel.php` del núcleo de PrestaShop dentro del contenedor Docker. 
+
+En la función `add()` y `update()`, PrestaShop ejecuta esta validación antes de insertar en una tabla `_shop`:
+```php
+if (Shop::isTableAssociated($this->def['table'])) {
+    // Insertar en _shop...
+}
+```
+
+PrestaShop maneja un array global estático (`Shop::$asso_tables`) donde guarda las tablas que oficialmente son multi-tienda (como `product`, `category`, etc.). Si la tabla de tu módulo no está en ese array estático en memoria, **el ORM omite por completo la inserción en la tabla `_shop`**, sin importar cuántos flags `'shop' => true` le pongas a los campos.
+
+**¿Por qué falla el nuestro?**
+Porque en ningún lugar del ciclo de vida de la ejecución hemos registrado nuestra tabla usando `Shop::addTableAssociation()`.
+
+## Solución Propuesta (Plan a Ejecutar después de tu OK)
+
+Para solucionar esto, debemos decirle al núcleo de PrestaShop que registre nuestra tabla en su array de tablas asociadas en cada carga.
+
+**La forma más estándar y robusta para módulos en 1.7:**
+Sobrescribir el constructor en `ProductBadgeModel.php` para que, justo en el instante en que se instancie el modelo, inyecte la tabla en el motor multitienda de PrestaShop antes de ejecutar la lógica padre:
+
+```php
+public function __construct($id = null, $id_lang = null, $id_shop = null)
+{
+    // Registrar nuestra tabla principal como multi-tienda
+    Shop::addTableAssociation(self::$definition['table'], array('type' => 'shop'));
+    // (Opcional pero recomendado para consistencia total) Registrar la de lang
+    Shop::addTableAssociation(self::$definition['table'].'_lang', array('type' => 'fk_shop'));
+    
+    parent::__construct($id, $id_lang, $id_shop);
+}
+```
+
+Al hacer esto:
+1. `ObjectModel` detectará que la tabla está asociada.
+2. Insertará/actualizará automáticamente el registro con el `active` en `ps_productbadges_shop`.
+3. El `INNER JOIN` de tu listado por fin encontrará datos, y las etiquetas se renderizarán instantáneamente en la interfaz.

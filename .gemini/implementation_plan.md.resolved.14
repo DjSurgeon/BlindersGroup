@@ -1,0 +1,31 @@
+# Plan de Corrección: ClassNotFoundException
+
+## Análisis del Error
+
+**El error devuelto:**
+`Attempted to load class "ProductBadgeModel" from the global namespace.`
+
+**¿Por qué sucede?**
+Cuando haces clic en "Añadir nuevo" (o en "Editar"), el controlador de la administración ejecuta el método nativo `loadObject(true)`. Este método hace un `new $this->className()`, es decir, un `new ProductBadgeModel()`.
+Sin embargo, PHP se queja de que no encuentra la clase. ¿El motivo? PrestaShop 1.7 tiene un autoloader (`spl_autoload`) que sabe buscar controladores y clases nativas del *core* en la carpeta raíz `classes/`, pero **no** busca automáticamente dentro de la subcarpeta `classes/` de un módulo externo. 
+Dado que eliminamos el `require_once` principal en el archivo `productbadges.php` (porque rompía la instalación), ahora la clase del modelo está totalmente aislada y el controlador no sabe dónde encontrarla.
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+
+La solución más limpia y estándar en PrestaShop es importar explícitamente el archivo del modelo en la cabecera del controlador que lo va a usar, usando una ruta relativa segura.
+
+1. Añadiremos la importación al principio del archivo (debajo de la etiqueta `<?php`):
+   ```php
+   require_once dirname(__FILE__) . '/../../classes/ProductBadgeModel.php';
+   ```
+   *Nota: `dirname(__FILE__)` nos sitúa en `/controllers/admin/`, por lo que bajamos dos niveles (`../../`) para llegar a la raíz del módulo y entramos en `/classes/`.*
+
+## Verification Plan
+1. Se insertará el `require_once` en la cabecera del controlador.
+2. Sincronizaremos el código al repositorio de Git local.
+3. El usuario refrescará la pestaña de añadir (o hará clic de nuevo en "Añadir nuevo").
+4. El formulario nativo se renderizará perfectamente porque PrestaShop ya podrá instanciar `new ProductBadgeModel()` sin perderse.

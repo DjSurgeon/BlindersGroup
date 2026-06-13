@@ -1,0 +1,59 @@
+# Plan de Implementación: Lógica de `ProductBadge.php`
+
+¡Manos a la obra con el corazón del módulo! Ahora que tenemos el esqueleto, vamos a inyectarle vida implementando la gestión segura y eficiente de la relación **Muchos a Muchos (M:M)** entre las Badges y los Productos.
+
+## Propósito
+- Implementar `getProducts()`, `updateProducts()` y `removeAllProducts()` utilizando la clase estática `Db::getInstance()` de PrestaShop.
+- Garantizar la máxima seguridad aplicando un estricto "Type Casting" `(int)` a todos los identificadores antes de inyectarlos en SQL.
+- Sobrescribir el método `delete()` nativo de `ObjectModel` para asegurar una limpieza proactiva de la tabla relacional, complementando nuestro `ON DELETE CASCADE`.
+
+## Modificaciones Propuestas en `ProductBadge.php`
+
+### 1. Método `getProducts()`
+**Lógica:**
+1. Verificaremos que el objeto actual tiene un ID válido (`if (!$this->id) return array();`).
+2. Ejecutaremos una consulta plana usando `Db::getInstance()->executeS()`.
+   ```sql
+   SELECT id_product FROM ps_productbadges_product WHERE id_productbadge = (int)$this->id
+   ```
+3. Mapearemos el resultado (que es un array asociativo 2D) a un array unidimensional plano (ej. `[1, 5, 12]`) que es mucho más fácil de manejar para los formularios de PrestaShop.
+
+### 2. Método `removeAllProducts()`
+**Lógica:**
+1. Verificaremos si existe `$this->id`.
+2. Usaremos el método nativo de borrado seguro de PrestaShop:
+   ```php
+   return Db::getInstance()->delete(
+       'productbadges_product', 
+       'id_productbadge = ' . (int)$this->id
+   );
+   ```
+
+### 3. Método `updateProducts($product_ids)`
+**Lógica:**
+1. El primer paso siempre será hacer "tabla rasa" llamando a `$this->removeAllProducts()`.
+2. Verificaremos si `$product_ids` es un array válido y tiene elementos. Si está vacío, retornamos `true` (ya que la intención era vaciarlo).
+3. Recorreremos `$product_ids`, sanitizando cada ID con `(int)` y construiremos un array multidimensional para una **inserción masiva** (Bulk Insert).
+4. Ejecutaremos `Db::getInstance()->insert('productbadges_product', $insert_data);` lo cual es mucho más eficiente en rendimiento que hacer 50 *inserts* por separado.
+
+### 4. [NUEVO] Método `delete()`
+Sobrescribiremos el comportamiento nativo de borrado:
+```php
+    public function delete()
+    {
+        $this->removeAllProducts();
+        return parent::delete();
+    }
+```
+*Aunque tu Foreign Key con CASCADE en la BD ya hace esto a nivel de MySQL, hacerlo en PHP es una práctica defensiva ("Defense in depth") muy bien valorada en código de producción.*
+
+## Verification Plan
+
+### Análisis Estático (Code Review)
+Antes de probar en UI, revisaremos que el código introducido:
+1. No contiene concatenaciones inseguras en SQL (SQL Injection).
+2. Todo input que entra a la BD pasa por `(int)` o métodos blindados como `Db::insert`.
+3. Cumple con PSR-12.
+
+> [!IMPORTANT]
+> Lee detalladamente este flujo. Si apruebas cómo he diseñado las sentencias SQL y el Bulk Insert, aplico el código en el archivo `ProductBadge.php`.

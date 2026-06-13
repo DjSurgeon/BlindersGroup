@@ -1,0 +1,45 @@
+# Plan de Implementación: Instalación de la Pestaña Admin (Tab)
+
+Tienes toda la razón. Antes de sumergirnos en la lógica de datos (`ObjectModel`), debemos cumplir con el requerimiento estricto del enunciado: garantizar que el módulo crea una pestaña en el backoffice bajo el menú "Catálogo", y que esta se elimina limpiamente al desinstalar. 
+
+Esto sienta las bases para el futuro `ModuleAdminController` que crearemos.
+
+## Propósito
+- Implementar el método `installTab()` para registrar dinámicamente un enlace en el menú de PrestaShop (Padre: Catálogo).
+- Implementar el método `uninstallTab()` para destruir el enlace y cumplir con el requisito de "no dejar pestañas huérfanas".
+- Conectar estos métodos en los flujos principales de `install()` y `uninstall()` de `productbadges.php`.
+- Asegurar soporte multi-idioma nativo para el nombre de la pestaña (ej. "Product Badges" en ambos idiomas, o traducible si fuese necesario).
+
+## Proposed Changes
+
+### [MODIFY] [productbadges.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/productbadges.php)
+
+**1. Nuevo método `installTab()`**
+Se encargará de:
+- Instanciar un nuevo objeto `Tab`.
+- Asignar `active = 1`.
+- Asignar `class_name = 'AdminProductBadges'` (Este será el nombre de nuestro controlador futuro).
+- Asignar `name` usando un bucle sobre los lenguajes instalados para que el nombre de la pestaña se guarde en todos ellos (obligatorio en PrestaShop).
+- Asignar `id_parent = (int) Tab::getIdFromClassName('AdminCatalog')` (Lo coloca bajo el menú "Catálogo").
+- Asignar `module = $this->name`.
+- Ejecutar `$tab->add()`.
+
+**2. Nuevo método `uninstallTab()`**
+Se encargará de:
+- Buscar el ID de la pestaña usando `Tab::getIdFromClassName('AdminProductBadges')`.
+- Si existe, instanciarla y ejecutar `$tab->delete()`.
+
+**3. Actualización de `install()` y `uninstall()`**
+- Modificaremos `install()` para que invoque `$this->installTab()` y retorne `false` si falla.
+- Modificaremos `uninstall()` para que invoque `$this->uninstallTab()` y retorne `false` si falla.
+
+## Verification Plan
+
+### Test Manual de Instalación
+1. Te indicaré que entres al Backoffice y desinstales/instales el módulo de nuevo.
+2. Podrás verificar visualmente en el menú lateral izquierdo que, dentro de **Catálogo**, aparece un nuevo submenú llamado "Product Badges".
+3. *(Nota: Si le haces clic dará error de "Controlador no encontrado" porque aún no hemos programado el AdminController, ¡es el comportamiento esperado por ahora!)*
+
+### Test Manual de Desinstalación
+1. Te indicaré que desinstales el módulo.
+2. Al recargar la página, podrás verificar que el enlace de "Product Badges" ha desaparecido limpiamente del menú Catálogo.

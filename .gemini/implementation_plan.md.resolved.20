@@ -1,0 +1,41 @@
+# Plan de Implementación: Pantalla de Configuración del Módulo
+
+## Análisis
+
+¡Tienes toda la razón! Nos hemos centrado tanto en la pantalla del CRUD de las etiquetas (en *Catálogo -> Product Badges*) que nos hemos saltado por completo la pantalla de configuración principal del propio módulo (la que sale al darle a "Configurar" en el *Module Manager*).
+
+El *Subject* exige 4 opciones de configuración globales:
+1. Activar/desactivar global (`PRODUCTBADGES_LIVE`)
+2. Mostrar en listados (`PRODUCTBADGES_USE_LIST`)
+3. Mostrar en ficha de producto (`PRODUCTBADGES_USE_PRODUCT`)
+4. Número máximo de badges por producto (`PRODUCTBADGES_MAX_ITEMS`)
+
+Nosotros ya inicializamos estas 4 variables en la base de datos (con el método `installConfiguration()`), pero nos falta construir la interfaz (UI) para que el administrador pueda modificarlas.
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [productbadges.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/productbadges.php)
+
+Añadiremos el método estándar de PrestaShop `getContent()` y su renderizador `renderForm()` dentro del archivo principal del módulo.
+
+1. **Gestión del Formulario (`getContent`)**:
+   - Capturará el evento de guardado (`Tools::isSubmit('submitProductbadgesModule')`).
+   - Validará el campo numérico (`PRODUCTBADGES_MAX_ITEMS` debe ser un entero positivo).
+   - Guardará los valores en la base de datos usando `Configuration::updateValue()`.
+   - Mostrará un mensaje de éxito (`$this->displayConfirmation()`) o de error (`$this->displayError()`).
+
+2. **Renderizado de la Interfaz (`renderForm`)**:
+   - Usaremos la API nativa `HelperForm` para generar un formulario que se integre perfectamente con el diseño del Backoffice de PrestaShop.
+   - Crearemos 3 campos tipo `switch` (Yes/No) para los tres primeros ajustes.
+   - Crearemos 1 campo tipo `text` (clase fija corta) para el número máximo de etiquetas.
+   - Cargaremos los valores actuales con `Configuration::get()`.
+
+## Verification Plan
+1. Inyectaremos el código en `productbadges.php`.
+2. Sincronizaremos el archivo con git.
+3. En el Backoffice de PrestaShop, irás a **Gestor de Módulos (Module Manager)**.
+4. Buscarás "Product Badges" y harás clic en el botón **Configurar**.
+5. Se abrirá la pantalla de configuración nativa mostrando los 4 ajustes requeridos.
+6. Cambiar un valor y darle a Guardar confirmará que la persistencia funciona correctamente.

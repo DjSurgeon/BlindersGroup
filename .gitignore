@@ -1,0 +1,21 @@
+# PrestaShop Docker Environment
+prestashop/
+docker-compose/
+.env
+
+# MacOS
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# AI Configuration MUST NOT BE IGNORED per requirements
+# .gemini/ (Do NOT uncomment this line)
+# GEMINI.md (Do NOT uncomment this line)
+# IA.md (Do NOT uncomment this line)
+
+# Temporals
+*.log
+*.zip
+*.tar.gz

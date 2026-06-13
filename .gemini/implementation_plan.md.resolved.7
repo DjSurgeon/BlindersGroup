@@ -1,0 +1,43 @@
+# Plan de Implementación: Fase 2 - ObjectModel (`ProductBadge`)
+
+¡Fantástico! Tenemos la base de datos impecable, las tablas creadas, la pestaña admin enlazada y las configuraciones inyectadas. Ahora debemos conectar la aplicación PHP con esta estructura usando el **ObjectModel** (el ORM nativo de PrestaShop).
+
+## Propósito
+Crear la clase `ProductBadge` para interactuar de forma orientada a objetos con las tablas que hemos creado.
+PrestaShop gestionará automáticamente el guardado, actualización y borrado multiidioma (`_lang`) y multitienda (`_shop`), pero debemos implementar a mano la gestión de la tabla pivot Muchos a Muchos (`_product`).
+
+## Modificaciones Propuestas
+
+### 1. [NEW] [classes/ProductBadge.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/classes/ProductBadge.php)
+
+Crearemos el archivo `ProductBadge.php` dentro de la carpeta `classes` del módulo.
+
+**Estructura de la Clase:**
+- Heredará de `ObjectModel`.
+- Definirá las propiedades públicas: `$id_productbadge`, `$bg_color`, `$text_color`, `$position`, `$active`, `$date_add`, `$date_upd`, `$text` (esta última para el multiidioma).
+- Configurará el array estático `$definition`:
+  - `table => 'productbadges'`
+  - `primary => 'id_productbadge'`
+  - `multilang => true`
+  - `multishop => true`
+  - `fields` con validaciones robustas como `Validate::isColorHexValue` y `Validate::isBool`.
+
+**Métodos M:M (Muchos a Muchos):**
+- `getProducts()`: Retornará un array de los IDs de los productos asociados a esa badge.
+- `updateProducts($product_ids)`: Un método integral que limpiará las asociaciones anteriores y guardará las nuevas en `productbadges_product`.
+- `removeAllProducts()`: Limpiará todas las asociaciones de la badge (útil al desvincular o borrar).
+
+### 2. [MODIFY] [productbadges.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/productbadges.php)
+Añadiremos un pequeño bloque `require_once` al inicio de nuestro archivo principal del módulo para asegurarnos de que la clase `ProductBadge` se cargue correctamente cuando el módulo esté en ejecución.
+
+## Verification Plan
+
+### Test de Instanciación Automática
+Dado que no tenemos interfaz aún (el controlador Admin es la Fase 3), te proporcionaré un par de líneas de prueba para añadir temporalmente al final del archivo `productbadges.php` que nos permita:
+1. Instanciar `new ProductBadge()`.
+2. Asignarle un color (`#FF0000`).
+3. Ejecutar `$badge->save()`.
+4. Mirar en la base de datos si PrestaShop ha inyectado las filas en las 3 tablas automáticas (`productbadges`, `_lang`, `_shop`).
+
+> [!IMPORTANT]
+> Si este plan te parece correcto, procederé a crear la carpeta `classes/` e inyectar el código para el modelo ORM.

@@ -1,0 +1,47 @@
+# Plan de Corrección: FatalThrowableError en el Controlador
+
+## Análisis del Error
+
+**¿Por qué sucede?**
+El error ocurre exactamente en la línea donde intentas traducir un texto en el constructor de nuestro controlador: `$this->l('ID')`. 
+En PrestaShop, la función `$this->l()` necesita hacer uso del motor de traducciones subyacente de Symfony (`$this->translator`). Sin embargo, este motor **solo se inicializa cuando se ejecuta el constructor padre (`parent::__construct()`)**. 
+Como en nuestro código la asignación de `$this->fields_list` (donde usamos `$this->l()`) está colocada **antes** de llamar a `parent::__construct()`, el traductor es `null` y PHP lanza un `FatalThrowableError` al intentar hacer `null->trans($string)`.
+
+## Proposed Changes
+
+La solución es extremadamente sencilla y clásica en PrestaShop. 
+
+### Módulo ProductBadges
+
+#### [MODIFY] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+1. **Reordenación del Constructor**:
+   Moveremos la llamada a `parent::__construct();` para que se ejecute **después** de configurar las propiedades básicas de la base de datos (`$this->bootstrap`, `$this->table`, `$this->className`), pero **antes** de inicializar cualquier array visual (`$this->fields_list` o textos traducibles).
+
+El esquema quedará así:
+```php
+public function __construct()
+{
+    $this->bootstrap = true;
+    $this->table = 'productbadges';
+    $this->className = 'ProductBadgeModel';
+    $this->lang = true;
+    $this->deleted = false;
+    $this->explicitSelect = true;
+
+    // INICIALIZAR EL PADRE PRIMERO (Carga motor de traducción)
+    parent::__construct();
+
+    // AHORA SÍ PODEMOS USAR $this->l()
+    $this->fields_list = array(
+        'id_productbadge' => array(
+            'title' => $this->l('ID'),
+            // ...
+```
+
+## Verification Plan
+
+### Manual Verification
+1. Aplicaremos el parche al archivo `AdminProductBadgesController.php`.
+2. Sincronizaremos el código al repositorio de Git (`productbadges/modules/...`).
+3. Actualizaremos o recargaremos la página del Backoffice (`Catálogo -> Product Badges`).
+4. La página ahora debe cargar correctamente y mostrar la tabla vacía sin lanzar ninguna excepción fatal.

@@ -1,0 +1,43 @@
+# Plan de Implementación: Scripts SQL (Install / Uninstall)
+
+Este plan define la inyección del código definitivo para la creación y destrucción de las tablas del módulo `productbadges`, respetando exactamente los ejemplos proporcionados para asegurar que el comportamiento de instalación y desinstalación (rollback incluido) sea perfecto.
+
+## Propósito
+- Implementar `install.php` utilizando los queries exactos (4 sentencias `CREATE TABLE`) con tipos de datos correctos (`AUTO_INCREMENT`, `varchar`, `tinyint`, `datetime`) y Claves Foráneas explícitas con restricciones `ON DELETE CASCADE`.
+- Incluir en `install.php` el sistema de Rollback exacto: si una tabla falla, cargar `uninstall.php` y devolver `false`.
+- Implementar `uninstall.php` respetando el formato de bucle acumulativo (con `$success = true/false`) y el orden lógico de borrado de dependencias (`_product`, `_lang`, `_shop` y por último la principal).
+- **Importante:** No se ejecutará ningún commit en el repositorio git; tú te encargarás de ello.
+
+## Proposed Changes
+
+### [MODIFY] [sql/install.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/install.php)
+Reemplazar el contenido completo del archivo por el siguiente código (basado en el primer snippet):
+- Definición de `$sql = array();`.
+- `$sql[] = 'CREATE TABLE IF NOT EXISTS... productbadges'`
+- `$sql[] = 'CREATE TABLE IF NOT EXISTS... productbadges_shop'` con Constraint `FK_pb_shop`
+- `$sql[] = 'CREATE TABLE IF NOT EXISTS... productbadges_lang'` con Constraint `FK_pb_lang`
+- `$sql[] = 'CREATE TABLE IF NOT EXISTS... productbadges_product'` con Constraint `FK_pb_prod`
+- Bucle `foreach` iterando `$sql` que ejecuta `Db::getInstance()->execute($query)`. Si alguno devuelve `false`, se ejecuta `include(dirname(__FILE__).'/uninstall.php'); return false;`.
+- `return true;` final.
+
+### [MODIFY] [sql/uninstall.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/sql/uninstall.php)
+Reemplazar el contenido completo del archivo por el código que acabas de compartir:
+- Definición de `$sql = array();`.
+- `$sql[] = 'DROP TABLE IF EXISTS... productbadges_product'`
+- `$sql[] = 'DROP TABLE IF EXISTS... productbadges_lang'`
+- `$sql[] = 'DROP TABLE IF EXISTS... productbadges_shop'`
+- `$sql[] = 'DROP TABLE IF EXISTS... productbadges'`
+- Definición de `$success = true;`.
+- Bucle `foreach` ejecutando `Db::getInstance()->execute($query)`. Si alguno falla, `$success = false;`.
+- `return $success;` final.
+
+## Verification Plan
+
+### Test de instalación manual (Backoffice)
+1. Ir al backoffice de PrestaShop en la sección "Módulos > Catálogo de Módulos".
+2. Buscar `productbadges` e instalar el módulo.
+3. Comprobar a través de PhpMyAdmin o del CLI que las 4 tablas existen, y si revisas sus estructuras, que las claves foráneas están aplicadas correctamente.
+
+### Test de desinstalación manual
+1. Pulsar en el botón desinstalar desde el backoffice.
+2. Comprobar que el borrado elimina en efecto las 4 tablas en orden inverso sin dejar errores.

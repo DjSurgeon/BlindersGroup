@@ -1,0 +1,37 @@
+# Plan de Arquitectura: Simplificación MultiTienda
+
+## 1. Discusión y Planteamiento
+
+Has dado en el clavo con la interpretación del *Subject*.
+El requisito número 6 dicta: *"El módulo no debe romper en una instalación multitienda. No es obligatorio que las badges difieran por tienda, pero el comportamiento debe ser coherente con el contexto activo."*
+
+**Interpretación Estratégica:**
+Intentamos forzar una arquitectura multitienda estricta (donde un badge podría estar activo en la Tienda A y desactivado en la Tienda B). Esto obligaba a crear la tabla `_shop` y a complicar el ORM.
+Sin embargo, dado que no es obligatorio que difieran, la forma más inteligente, limpia y eficiente de abordarlo es hacer que la entidad **ProductBadge sea GLOBAL**.
+- Si creas un badge "OFERTA", existe para toda la instalación.
+- Su estado (Activo/Inactivo) es global.
+- Su traducción (Inglés/Español) es por idioma, independientemente de la tienda.
+
+Esto cumple perfectamente el requisito: **No rompe la multitienda** (funciona en cualquier contexto) y **el comportamiento es coherente** (si está activo, se ve en las tiendas que usen ese idioma). Al mismo tiempo, nos libramos de una tabla vacía, consultas JOIN lentas y duplicación innecesaria en la base de datos.
+
+## 2. Cambios Estructurales Propuestos (Limpieza)
+
+Vamos a extirpar la capa MultiTienda estricta de la base de datos y del modelo, dejando un código mucho más elegante.
+
+### A. Base de Datos (`sql/install.php` y `sql/uninstall.php`)
+- **Eliminar tabla `_shop`:** Borraremos la creación de la tabla `ps_productbadges_shop` por completo. No la necesitamos.
+- **Simplificar tabla `_lang`:** Eliminaremos la columna `id_shop` de la tabla `ps_productbadges_lang`. Una traducción de "SALE" para inglés sirve para todas las tiendas en inglés. La clave primaria pasará a ser simplemente `(id_productbadge, id_lang)`.
+
+### B. ORM (`ProductBadgeModel.php`)
+- **Limpiar `$definition`:** Eliminaremos los flags `'multilang_shop' => true` y `'multishop' => true`.
+- Mantendremos únicamente `'multilang' => true` para conservar las traducciones.
+
+### C. Limpieza de Entorno (Local)
+Para evitar conflictos de claves foráneas con las tablas actuales, en cuanto apruebes el plan:
+1. Ejecutaré un comando por consola para hacer un `DROP TABLE` manual de las tablas actuales de badges en tu contenedor MySQL.
+2. Desinstalaremos e instalaremos el módulo desde el Backoffice para que se generen las tablas con la nueva estructura simplificada y global.
+
+## Verification Plan
+1. Tras aplicar los cambios y reinstalar el módulo, la base de datos tendrá solo 3 tablas: `productbadges`, `productbadges_lang` y `productbadges_product`.
+2. Al crear un badge en el Backoffice, se creará una fila limpia en la principal y dos filas en `_lang` (una por cada idioma), **sin duplicarse por tienda**.
+3. El código será 100% nativo, rápido y cumplirá el requerimiento 6 a la perfección.

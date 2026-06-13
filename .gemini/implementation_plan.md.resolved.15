@@ -1,0 +1,54 @@
+# Plan de Implementación: Refactorización de AdminProductBadgesController
+
+## Propósito
+Ajustar y perfeccionar el controlador `AdminProductBadgesController` para añadir mejoras visuales en el listado (mediante callbacks) y garantizar la perfecta integración con el modo **MultiTienda (Multishop)** nativo de PrestaShop 1.7.
+
+## Proposed Changes
+
+### Módulo ProductBadges
+
+#### [MODIFY] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+
+1. **Configuración del Constructor (`__construct`)**:
+   - Mantendremos la asociación con la tabla `productbadges` y la clase `ProductBadgeModel`.
+   - Se activará `$this->lang = true` y `$this->bootstrap = true`.
+   - Reestructuración de `$this->fields_list`:
+     - **`id_productbadge`**: centrado, clase `fixed-width-xs`, y `filter_key` a `a!id_productbadge`.
+     - **`text`**: título "Texto Etiqueta", con `filter_key` apuntando a `b!text`.
+     - **`bg_color`**: título "Color Fondo", usaremos el callback `callback => 'displayColorBg'`.
+     - **`text_color`**: título "Color Texto", usaremos el callback `callback => 'displayColorText'`.
+     - **`position`**: título "Posición", alineado al centro.
+     - **`active`**: título "Activo", `type => 'bool'`, alineado al centro, habilitando el cambio nativo de estado con `active => 'status'`.
+   - Se añadirán los botones de fila: `$this->addRowAction('edit');` y `$this->addRowAction('delete');`.
+
+2. **Requisito Multitienda (JOIN y filter_key)**:
+   Inmediatamente después de la llamada a `parent::__construct();`, inyectaremos la siguiente lógica dinámica:
+   ```php
+   if (Shop::isFeatureActive() && $this->context->shop->getContext() == Shop::CONTEXT_SHOP) {
+       $this->_join .= ' INNER JOIN `'._DB_PREFIX_.'productbadges_shop` s 
+           ON (a.`id_productbadge` = s.`id_productbadge` AND s.`id_shop` = '.(int)$this->context->shop->id.')';
+       $this->fields_list['active']['filter_key'] = 's!active';
+   } else {
+       $this->fields_list['active']['filter_key'] = 'a!active';
+   }
+   ```
+
+3. **Implementación de Callbacks**:
+   Añadiremos dos métodos nuevos en la clase para renderizar los colores de forma visual en la tabla en vez de mostrar texto plano:
+   ```php
+   public function displayColorBg($color, $row)
+   {
+       return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
+   }
+
+   public function displayColorText($color, $row)
+   {
+       return '<span style="background-color:'.$color.'; display:block; width:30px; height:20px; border-radius:3px; border:1px solid #ccc;"></span>';
+   }
+   ```
+
+## Verification Plan
+1. Inyectaré estos cambios reescribiendo la estructura inicial del constructor y añadiendo los métodos callback.
+2. Refrescar la vista del Backoffice de Product Badges.
+3. El listado renderizará correctamente los cuadrados de colores mediante callbacks.
+4. Al cambiar el contexto de tienda en el desplegable superior de PrestaShop, la tabla listará y permitirá activar/desactivar el badge de forma independiente en cada tienda.

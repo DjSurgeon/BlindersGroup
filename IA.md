@@ -1,49 +1,36 @@
-# Registro de Desarrollo e IA (IA.md)
+# Reflexión sobre el uso de la IA (Antigravity - Gemini)
 
-Este documento registra las herramientas de Inteligencia Artificial utilizadas, así como los problemas críticos enfrentados y resueltos durante el desarrollo del módulo `productbadges` para PrestaShop 1.7.
+El desarrollo de este módulo de PrestaShop 1.7 se realizó en estrecha colaboración con **Antigravity** (un agente de IA avanzado basado en Google Deepmind). El enfoque adoptado fue de "Pair Programming Autónomo", donde el desarrollador guiaba los requerimientos técnicos del negocio y la IA ejecutaba las soluciones arquitectónicas bajo el marco estricto de PrestaShop 1.7.
 
-## Herramientas de IA Utilizadas
+## ¿Qué nos ahorró la IA en este ejercicio?
 
-- **Agente Principal**: Antigravity (Google DeepMind)
-- **Rol**: Assistant Agentic Coding
-- **Interacción**: Depuración en tiempo real, refactorización de código, manejo de contenedores Docker y análisis de base de datos MySQL.
+1. **Boilerplate masivo de PrestaShop:**
+   Crear un módulo desde cero en PrestaShop implica escribir muchísimo código repetitivo: definiciones de `ObjectModel`, registros de hooks (`install()`, `uninstall()`), y arrays anidados para inicializar el `HelperForm` y el `HelperList`. La IA fue capaz de redactar toda la arquitectura inicial de archivos (Controladores del admin, Modelos y Plantillas Smarty) en escasos segundos, dejando el módulo instalable y operativo casi de inmediato.
+   
+2. **Contexto de Base de Datos y Traducciones:**
+   Configurar la tabla `_lang` y enlazarla adecuadamente con el motor de `multilang => true` de PrestaShop suele ser un punto donde los desarrolladores pierden tiempo depurando. La IA configuró el ORM de forma nativa a la primera, asegurando que las traducciones desde el Backoffice funcionaran sin requerir líneas de código extra.
 
-## Errores Críticos Detectados y Solucionados
+3. **Inyección Dinámica de FrontEnd:**
+   La IA investigó de forma autónoma el núcleo de PrestaShop 1.7 (haciendo uso de comandos `grep` dentro del contenedor Docker) para descubrir que el hook `displayProductFlags` estaba obsoleto en el tema Classic. Rápidamente pivoteó hacia el estándar moderno `actionProductFlagsModifier`, inyectando las badges de forma limpia y 100% compatible con la arquitectura del front de PrestaShop sin sobrescribir las plantillas `.tpl`.
 
-### 1. Colisión de Nombres de Clase (Case-Insensitive)
-**Problema**: Inicialmente, la clase del modelo se llamó `ProductBadge`. Debido a que PHP es *case-insensitive* para los nombres de las clases, PrestaShop se confundía entre la clase del módulo (`Productbadges`) y la clase del modelo (`Productbadge`), lanzando errores de re-declaración de clase.
-**Solución**: Se renombró el ObjectModel a `ProductBadgeModel` para aislar su espacio de nombres y evitar colisiones con el nombre principal del módulo.
+## ¿En qué entorpeció o nos llevó por mal camino?
 
-### 2. Error Silencioso de Instalación: `ContextErrorException` en Backoffice
-**Problema**: Al hacer clic en "Instalar", el Backoffice mostraba el mensaje genérico: *"El módulo no es válido y no se puede cargar"*.
-**Diagnóstico**:
-- Se descartó un fallo SQL y se demostró que el módulo funcionaba por CLI.
-- Se identificó que PrestaShop intentaba traducir las tablas (al usar `multilang => true` en el ObjectModel) prematuramente durante la instalación, si se incluía el modelo en la cabecera.
-- Tras aislar el `require_once`, el módulo seguía fallando en el Backoffice.
-- Se construyó un logger a medida dentro del ciclo de vida del módulo y se descubrió que el fallo radicaba en la inicialización de compatibilidad de versiones (`ps_versions_compliancy`).
+1. **Gestión de Entornos Docker y Permisos (Error 500 y Caché):**
+   Durante una de las fases, la IA borró el directorio `/var/cache` de PrestaShop ejecutando el comando como el usuario `root` dentro del contenedor de Docker. Esto alteró la propiedad de los archivos generados y causó un `Whoops Error 500` generalizado debido a problemas de permisos (`Permission denied` en ficheros autogenerados de Symfony). Tuvimos que invertir tiempo en diagnosticar el problema y arreglarlo ejecutando `chown -R www-data:www-data` para devolver el control al servidor Apache.
 
-**Solución Radical**: 
-En la función `__construct()`, la variable `$this->ps_versions_compliancy` se estaba definiendo **después** de llamar a `parent::__construct()`. En PrestaShop 1.7, `ModuleCore` asume que esta propiedad ya existe; al leer un valor `null`, PHP lanzaba un `Notice`.
-En el entorno de Symfony del Backoffice, este Notice se transformaba automáticamente en un `ContextErrorException` (Fatal Error), provocando que PrestaShop abortara la instalación/desinstalación inmediatamente.
-Se solucionó subiendo la asignación una línea, **antes** del `parent::__construct()`.
+2. **La trampa del Multitienda (Tablas `_shop` vacías):**
+   Al principio, la IA intentó programar el módulo en modo *Full Multishop*, creando una tabla `ps_productbadges_shop` e integrando los métodos `Shop::addTableAssociation()`. Sin embargo, esto generó un conflicto silencioso: al instalar y asociar etiquetas a productos, las consultas `INNER JOIN` con la tabla `_shop` fallaban porque los registros de la tienda no se estaban propagando bien en el entorno de desarrollo. Nos hizo perder tiempo persiguiendo "etiquetas fantasma" que sí estaban en la BD pero no se renderizaban en el admin. Al final, se decidió realizar un rollback y aplicar un enfoque global más estable.
 
-### 3. Estado Corrupto de la Base de Datos ("Ghost State")
-**Problema**: Tras varios intentos fallidos de instalación, el módulo quedó en un estado "fantasma" donde existía en la tabla `ps_module` y `ps_tab`, pero el sistema lo consideraba desinstalado. Esto bloqueaba nuevas instalaciones.
-**Solución**: Se ejecutó una limpieza manual (`DELETE FROM ps_module`, `DELETE FROM ps_tab`, `DELETE FROM ps_authorization_role`) accediendo por consola interactiva al contenedor `ps_mysql_8` para reiniciar el ciclo de vida del módulo.
+3. **Incomprensión inicial de la UI del Backoffice:**
+   Durante la validación de idiomas, el desarrollador indicó que la base de datos guardaba el mismo texto para Inglés que para Español. La IA dedicó tiempo a depurar el ORM y hacer pruebas de curl cuando, en realidad, el problema era una simple incomprensión de UX: PrestaShop copia el texto al segundo idioma si el usuario no hace clic en la "banderita" desplegable (ES/EN) del campo de texto en el Backoffice. Un humano experimentado habría detectado este comportamiento visual al instante.
 
-### 4. FatalThrowableError en Controlador: Uso prematuro de Traducciones
-**Problema**: Al instanciar `AdminProductBadgesController`, el Backoffice lanzaba un `FatalThrowableError` en `AdminController.php` al intentar ejecutar `$this->l('ID')`.
-**Solución**: En PrestaShop, la función de traducción `$this->l()` depende del motor interno de traducciones de Symfony (`$this->translator`), el cual se inicializa al invocar `parent::__construct()`. Se solucionó moviendo `parent::__construct()` hacia arriba en el constructor, *antes* de declarar el array `$this->fields_list` (donde se usan las traducciones).
+## ¿Qué cambiaríamos del flujo con IA si lo repitiéramos?
 
-### 5. PrestaShopDatabaseException: Ambigüedad SQL en HelperList
-**Problema**: Al renderizar el listado del CRUD, PrestaShop lanzaba `Column 'id_productbadge' in field list is ambiguous`. Esto ocurre porque el controlador unía `ps_productbadges` (a) con `ps_productbadges_lang` (b), y ambas tienen la columna `id_productbadge`. Al no especificar el alias, MySQL rechazaba la consulta. Además, ordenaba erróneamente por el plural (`a.id_productbadges`).
-**Solución**: 
-1. Se forzó la clave primaria correcta en el controlador definiendo `$this->identifier = 'id_productbadge';`.
-2. Se resolvió la ambigüedad SQL inyectando el alias en la definición del campo de listado mediante `'filter_key' => 'a!id_productbadge'`.
+1. **Testeo Temprano en Frontend:**
+   Pasamos demasiado tiempo puliendo el CRUD y las relaciones de bases de datos antes de verificar si siquiera podíamos inyectar un píxel en la imagen del producto. En el futuro, obligaríamos a la IA a hacer un "Proof of Concept" rápido (como inyectar un texto estático en el frontend) antes de programar los 400 líneas del backend administrativo.
 
-### 6. ClassNotFoundException: Autoloader de PrestaShop y Objetos del Módulo
-**Problema**: Al hacer clic en "Añadir nuevo" en el controlador del Backoffice, PrestaShop intentaba ejecutar `new ProductBadgeModel()` mediante su método `loadObject()`, lo que resultaba en un `ClassNotFoundException`.
-**Solución**: El autoloader (`spl_autoload`) nativo de PrestaShop 1.7 no escanea de forma predeterminada la carpeta `classes/` dentro de los módulos de terceros para inyectar modelos en los controladores de administración. La solución fue añadir un requerimiento explícito en la cabecera del controlador usando la ruta absoluta segura: `require_once dirname(__FILE__) . '/../../classes/ProductBadgeModel.php';`. Además, se implementó validación server-side estricta (`preg_match('/^#[0-9a-fA-F]{6}$/')`) en el `postProcess()` para proteger la base de datos de inyecciones de color maliciosas.
+2. **Restricción de Comandos del Sistema:**
+   Restringir la capacidad de la IA de manipular los directorios `/var/` o ficheros de caché del sistema operativo sin validación manual explícita (para prevenir los fatídicos problemas de `chown` o borrados accidentales de configuraciones).
 
----
-*Este documento cumple con el requisito funcional "IA.md completado (herramientas, errores detectados)".*
+3. **Planes de Implementación más agresivos con el Core:**
+   La IA debe ser instruida explícitamente desde el principio con directrices como *"No asumas hooks basándote en la documentación de PS 1.6; haz un escaneo previo en el core de tu contenedor actual"*. Esto ahorraría el doble trabajo de reciclar hooks desfasados.

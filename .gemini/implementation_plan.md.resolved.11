@@ -1,0 +1,57 @@
+# Plan de Implementación: AdminProductBadgesController
+
+El objetivo es crear el controlador de administración tradicional (Backoffice) para gestionar el CRUD completo de las etiquetas (badges). Se respetará la arquitectura FSD y las normas de PrestaShop 1.7.
+
+## User Review Required
+
+- **Selección de Productos**: PrestaShop no tiene un campo nativo en `HelperForm` para relaciones Muchos-a-Muchos escalables sin Javascript a medida (un `select` múltiple explotaría con catálogos de 50.000 productos). 
+**Propuesta**: Usaremos un campo de tipo `text` donde el usuario introducirá los IDs de los productos separados por comas (ej. `1, 15, 24`). El controlador procesará este string y usará los métodos `updateProducts()` de nuestro modelo. ¿Estás de acuerdo con este enfoque pragmático para evitar dependencias JS externas?
+
+## Open Questions
+
+- PrestaShop 1.7 no dispone del método `Validate::isColorHexValue` (como se menciona en el documento de requisitos). Para validar los colores, **usaremos la función nativa `Validate::isColor()`** junto a una expresión regular nativa en PHP (`preg_match('/^#[0-9a-fA-F]{6}$/')`) en el servidor. ¿Conforme?
+
+## Proposed Changes
+
+---
+
+### Módulo ProductBadges
+
+#### [NEW] [AdminProductBadgesController.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/controllers/admin/AdminProductBadgesController.php)
+Creación del controlador del Backoffice. Heredará de `ModuleAdminController`.
+
+1. **Configuración en el Constructor**:
+   - `bootstrap = true`
+   - `table = 'productbadges'`
+   - `className = 'ProductBadgeModel'`
+   - `lang = true` (Las tablas tienen sufijo `_lang`)
+   - `identifier = 'id_productbadge'`
+   - Configuración de `$this->fields_list` para mostrar la tabla de resumen (ID, Texto, Color BG, Color Texto, Posición, Estado).
+
+2. **Renderizado del Formulario (`renderForm()`)**:
+   Usaremos el `HelperForm` de PrestaShop para generar los inputs:
+   - `text` (lang = true) para el nombre/texto de la etiqueta.
+   - `color` para el `bg_color` y `text_color` (PrestaShop proporciona un selector de color visual nativo).
+   - `select` para la posición (`top-left` o `top-right`).
+   - `switch` para activar/desactivar la etiqueta.
+   - `text` para asignar los IDs de los productos (`product_ids`).
+
+3. **Validación Server-Side (`postProcess()` o `processSave()`)**:
+   - Validación estricta de formato de colores hexadecimales.
+   - Validación de la posición (verificando que esté dentro del array de opciones permitidas).
+   - Limpieza y sanitización (`(int)`) de la lista de IDs de productos.
+   - Si la validación falla, se añadirá a `$this->errors`.
+
+4. **Persistencia Relacional M:M (`afterAdd()` y `afterUpdate()`)**:
+   - Una vez guardado el `ObjectModel`, sobreescribiremos estos métodos para leer el campo `product_ids` del formulario, separar por comas, e invocar `$object->updateProducts($array_ids)`.
+
+## Verification Plan
+
+### Manual Verification
+1. Entrar al Backoffice de PrestaShop.
+2. Navegar a Catálogo -> Product Badges (la pestaña que creamos en la instalación).
+3. Verificar que aparece el listado de `HelperList` vacío.
+4. Crear un nuevo Badge asegurando que el validador rechaza colores inválidos.
+5. Guardar el Badge con un texto, colores válidos e IDs de productos (`1, 2`).
+6. Volver a editarlo para comprobar que los valores (incluyendo los IDs de productos extraídos desde la BD mediante `getProducts()`) se cargan correctamente en el formulario.
+7. Eliminar un badge y verificar que la limpieza relacional (en cascada) funciona.

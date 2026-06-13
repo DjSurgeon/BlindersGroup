@@ -1,0 +1,27 @@
+# Plan de Implementación: Refactorización de Validación de Color
+
+Entendido perfectamente. Tu enfoque aquí es el de un arquitecto que no se la juega con las idiosincrasias o dependencias ocultas del *core* de PrestaShop. 
+
+Como bien apuntas, aunque exista una función perdida llamada `isColor`, usarla como validador nativo en `$definition` para un campo personalizado (`bg_color`, `text_color`) es arriesgado y se sale del estándar documentado para módulos de terceros. La mejor práctica, como recomiendas, es definir el campo simplemente como `isString` a nivel de ORM, y aplicar la validación algorítmica estricta (Expresiones Regulares) en la capa de negocio/controlador.
+
+## Modificaciones Propuestas
+
+### 1. [MODIFY] `classes/ProductBadge.php`
+Relajaremos la validación en la definición estática del ObjectModel para que PrestaShop no lance excepciones fatales incontrolables.
+- Cambiaremos `'validate' => 'isColor'` de vuelta a `'validate' => 'isString'` para `bg_color` y `text_color`.
+- El ORM se limitará a comprobar que es una cadena de texto y que no excede el `size => 32`.
+
+### 2. [DEFER] Capa de Controlador (Fase 3)
+Añadiremos una nota al proyecto indicando que, cuando construyamos el `AdminProductBadgesController` (o procesemos el formulario), implementaremos una validación Server-Side explícita usando Regex:
+```php
+if (!preg_match('/^#[a-f0-9]{6}$/i', $bg_color)) {
+    $this->errors[] = $this->l('Formato de color hexadecimal inválido.');
+}
+```
+
+## Verification Plan
+1. Modificaremos el archivo `ProductBadge.php` inyectando `isString` en los campos de color.
+2. Confirmaremos que al instanciar el modelo con un string normal, el ORM de PrestaShop 1.7 no bloquea la ejecución.
+
+> [!IMPORTANT]
+> Si este plan se ajusta exactamente a tu filosofía de desarrollo y a las especificaciones del cliente, dame tu aprobación y procedo a corregir el `$definition` en el ObjectModel.

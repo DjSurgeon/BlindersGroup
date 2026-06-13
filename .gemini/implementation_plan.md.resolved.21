@@ -1,0 +1,50 @@
+# Plan de Implementación: Asignación de Etiquetas a Productos (M:M)
+
+## Análisis del Requisito
+
+El *Subject* dice:
+> **2. Asignar etiquetas a productos.** Relación muchos a muchos: un producto puede tener varias etiquetas, una etiqueta puede aplicarse a varios productos.
+
+Actualmente, tenemos una implementación "rudimentaria" en el CRUD de la etiqueta (una caja de texto donde escribir IDs de productos separados por comas). Si bien esto cumple técnicamente, **no es la forma profesional** en la que un usuario de PrestaShop espera gestionar su catálogo.
+
+La forma correcta y nativa en PrestaShop es que, al entrar a editar un Producto en el Backoffice (Ficha de Producto), exista una sección dedicada a nuestro módulo donde el usuario vea todas las etiquetas disponibles y simplemente marque con un *checkbox* cuáles quiere asignarle a ese producto.
+
+Para lograr esto en PrestaShop 1.7 (que usa Symfony para el catálogo), debemos engancharnos a dos hooks nativos.
+
+## Proposed Changes
+
+### 1. Registro de Hooks (`productbadges.php`)
+Debemos modificar el método `install()` para registrar dos nuevos hooks del núcleo:
+- `displayAdminProductsExtra`: Permite inyectar HTML (nuestros checkboxes) en la pestaña "Módulos" de la ficha de edición del producto en el Backoffice.
+- `actionProductUpdate`: Se dispara automáticamente cuando el administrador le da a "Guardar" al producto. Lo usaremos para capturar nuestros checkboxes y guardarlos en la base de datos.
+
+### 2. Interfaz en el Producto (`hookDisplayAdminProductsExtra`)
+Crearemos la función del hook en `productbadges.php`.
+Esta función:
+- Obtendrá el ID del producto que se está editando (`$params['id_product']`).
+- Consultará la BD para obtener **todas** las etiquetas activas.
+- Consultará la tabla `ps_productbadges_product` para saber cuáles ya tiene asignadas ese producto.
+- Pasará estos datos a Smarty y renderizará una plantilla `.tpl`.
+
+### 3. Plantilla Smarty (`views/templates/admin/hook/admin_products_extra.tpl`)
+Crearemos este archivo nuevo. 
+- Contendrá una estructura HTML (Bootstrap 4, que es el que usa Symfony en PS 1.7) iterando sobre las etiquetas.
+- Por cada etiqueta, mostrará un checkbox. Su atributo `name` será un array (ej. `productbadges[]`) para capturar múltiples selecciones fácilmente.
+
+### 4. Guardado en BD (`hookActionProductUpdate`)
+Crearemos la función del hook en `productbadges.php`.
+Esta función:
+- Se ejecutará al guardar el producto.
+- Leerá las etiquetas seleccionadas (`Tools::getValue('productbadges', [])`).
+- Limpiará todas las asignaciones previas de ese producto en la tabla `ps_productbadges_product`.
+- Insertará las nuevas filas correspondientes a los checkboxes marcados.
+
+### 5. Limpieza del Controlador (`AdminProductBadgesController.php`)
+*(Opcional pero recomendado)*: Eliminaremos el campo de texto feo de "Product IDs separados por comas" del formulario de creación de Etiquetas, dejando la gestión centralizada y elegante en la ficha de cada producto.
+
+## Verification Plan
+1. Inyectaremos el código en `productbadges.php` y crearemos el archivo `.tpl`.
+2. Haremos un "Reset" del módulo desde el Backoffice para que registre los nuevos hooks.
+3. Iremos a **Catálogo > Productos**, editaremos cualquier producto.
+4. En la pestaña **Módulos** (o "Ajustes básicos" dependiendo del hook), veremos una nueva sección "Product Badges" con checkboxes.
+5. Marcaremos un par de insignias, guardaremos el producto, y comprobaremos en la tabla `ps_productbadges_product` que la relación se ha guardado correctamente.

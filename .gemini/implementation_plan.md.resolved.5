@@ -1,0 +1,61 @@
+# Plan de Implementación: Inicialización de la Configuración Base
+
+Me parece perfecto tu enfoque. Trabajar de forma precisa, validando cada línea y entendiendo el "por qué" detrás de todo, es la marca de un verdadero Senior/Arquitecto. 
+
+Aquí tienes el plan detallado para dejar asentadas (y destruir) las variables de configuración en la tabla nativa `ps_configuration` utilizando la API de PrestaShop.
+
+## Propósito
+- **En la Instalación:** Registrar en la base de datos valores seguros (por defecto) para las configuraciones globales que pidió Blinders Group. 
+- **En la Desinstalación:** Limpiar completamente estas claves para no dejar basura ("zombies") en la tabla global `ps_configuration` de PrestaShop.
+- **Transaccionalidad:** Incluiremos esto en las cadenas lógicas `&&` de los métodos `install()` y `uninstall()`, de modo que si PrestaShop falla escribiendo la configuración, aborte la instalación y marque el módulo como "no instalado".
+
+## Modificaciones Propuestas
+
+### [MODIFY] [productbadges.php](file:///home/sergio/vscode/prueba-tecnica/test1/prestashop/docker-compose/modules_dev/productbadges.php)
+
+#### 1. Método `install()`
+Modificaremos el bloque de retorno para añadir cuatro llamadas al método `Configuration::updateValue()`.
+El código resultante para ese bloque será exactamente este:
+
+```php
+        return parent::install() &&
+            $this->installTab() &&
+            $this->registerHook('displayBackOfficeHeader') &&
+            $this->registerHook('displayProductFlags') &&
+            Configuration::updateValue('PRODUCTBADGES_LIVE', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_USE_LIST', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_USE_PRODUCT', 1) &&
+            Configuration::updateValue('PRODUCTBADGES_MAX_ITEMS', 3);
+```
+**Análisis línea a línea:**
+- `PRODUCTBADGES_LIVE`, 1: Activa globalmente el módulo por defecto.
+- `PRODUCTBADGES_USE_LIST`, 1: Activa mostrar badges en listados por defecto.
+- `PRODUCTBADGES_USE_PRODUCT`, 1: Activa mostrar badges en la ficha de producto por defecto.
+- `PRODUCTBADGES_MAX_ITEMS`, 3: Establece un máximo de 3 etiquetas por defecto (para no romper visualmente el CSS).
+
+#### 2. Método `uninstall()`
+Modificaremos el bloque de retorno para añadir cuatro llamadas al método `Configuration::deleteByName()`.
+El código resultante será exactamente este:
+
+```php
+        return parent::uninstall() &&
+            $this->uninstallTab() &&
+            Configuration::deleteByName('PRODUCTBADGES_LIVE') &&
+            Configuration::deleteByName('PRODUCTBADGES_USE_LIST') &&
+            Configuration::deleteByName('PRODUCTBADGES_USE_PRODUCT') &&
+            Configuration::deleteByName('PRODUCTBADGES_MAX_ITEMS');
+```
+**Análisis línea a línea:**
+- Cada `deleteByName` buscará la clave exacta en la tabla `ps_configuration` y la borrará sin dejar rastro.
+
+## Verification Plan
+
+### Test de Validación por Base de Datos
+1. Una vez inyectemos el código (y tras tu confirmación y commit), instalarás el módulo.
+2. Usaremos el acceso a la Base de Datos (`phpMyAdmin` u otra herramienta SQL) y ejecutaremos: 
+   `SELECT * FROM ps_configuration WHERE name LIKE 'PRODUCTBADGES_%';`
+3. Deberíamos ver exactamente 4 filas con los valores `1`, `1`, `1` y `3`.
+4. Al pulsar "Desinstalar", la misma query SQL debería devolver **cero** resultados, demostrando una limpieza perfecta.
+
+> [!IMPORTANT]
+> Revisa bien los nombres de las variables (`PRODUCTBADGES_LIVE`, etc.) y sus valores por defecto. Si el plan cuenta con tu aprobación, modificaré tu archivo `productbadges.php`.
