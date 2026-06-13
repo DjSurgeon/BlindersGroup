@@ -248,7 +248,7 @@ class Productbadges extends Module
 
     public function hookDisplayProductFlags($params)
     {
-        return '';
+        return array();
     }
 
     public function hookDisplayAdminProductsExtra($params)
